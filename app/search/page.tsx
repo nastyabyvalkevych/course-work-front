@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useEffect, useMemo, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
+import { formatStatus, statusBadgeClass } from "@/lib/status";
 import { SearchResponse, SearchResultItem } from "@/lib/types";
 
 const DEFAULT_LIMIT = 20;
@@ -17,15 +18,46 @@ const fieldLabelMap: Record<string, string> = {
   cpv: "CPV",
   cpvText: "Предмет закупівлі",
   itemsText: "Опис позицій",
+  itemsQuantityText: "Кількість позицій",
+  itemsUnit: "Одиниці виміру",
+  status: "Статус",
+  datePublished: "Дата публікації",
+  dateModified: "Дата оновлення",
+  valueAmount: "Очікувана сума",
+  valueCurrency: "Валюта",
   procuringEntityName: "Замовник",
   procuringEntityId: "ЄДРПОУ замовника",
+  procuringEntityRegion: "Регіон замовника",
+  procuringEntityLocality: "Населений пункт замовника",
+  procuringEntityGeoText: "Географія замовника",
   participantsNames: "Учасник",
   participantsIds: "ЄДРПОУ учасника",
+  participantsRegions: "Регіон учасника",
+  participantsLocalities: "Населений пункт учасника",
   winnerNames: "Переможець",
   winnerIds: "ЄДРПОУ переможця",
+  winnerAwardStatus: "Статус переможця",
+  winnerValueAmount: "Сума переможця",
+  winnerValueCurrency: "Валюта переможця",
+  bidValuesText: "Суми пропозицій",
+  bidUnitPricesText: "Ціна за одиницю",
+  minBidValue: "Мінімальна пропозиція",
+  maxBidValue: "Максимальна пропозиція",
+  bidsCount: "Кількість пропозицій",
+  deliveryRegion: "Регіон поставки",
+  deliveryLocality: "Населений пункт поставки",
+  deliveryGeoText: "Географія поставки",
   docsText: "Документи",
+  milestonesText: "Етапи",
+  paymentTermsText: "Умови оплати",
+  procurementMethodType: "Тип процедури",
+  awardCriteria: "Критерії оцінки",
+  awardPeriodText: "Період оцінки",
+  contractStatus: "Статус договору",
   technicalRequirementsText: "Технічні вимоги",
   technicalResponsesText: "Технічні відповіді",
+  procurementMethod: "Процедура",
+  mainProcurementCategory: "Категорія закупівлі",
 };
 
 const formatCurrency = (value?: number | null, currency?: string | null) => {
@@ -64,6 +96,7 @@ type SearchFormState = {
 export default function SearchPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<"exact" | "partial">("partial");
   const [formState, setFormState] = useState<SearchFormState>({
     q: "",
     status: "",
@@ -174,8 +207,47 @@ export default function SearchPage() {
     return results;
   }, [data, formState.sort, results]);
 
-  const totalPages = data ? Math.max(1, Math.ceil(data.total / DEFAULT_LIMIT)) : 1;
+  const totalPages = data
+    ? Math.max(1, Math.ceil(data.total / DEFAULT_LIMIT))
+    : 1;
   const currentParams = searchParams.toString();
+  const rawQueryTerms = useMemo(() => {
+    const rawQuery = searchParams.get("q") ?? "";
+    return rawQuery.toLowerCase().match(/[0-9a-zа-яіїєґ]+/gi) ?? [];
+  }, [searchParams]);
+  const hasQueryTerms = rawQueryTerms.length > 0;
+
+  const exactResults = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+    if (!hasQueryTerms) {
+      return [];
+    }
+    return sortedResults.filter((item) => {
+      const matchedTerms = item.matchedTerms ?? [];
+      if (matchedTerms.length === 0) {
+        return false;
+      }
+      return matchedTerms.some((match) => {
+        const normalizedTerms = match.terms.map((term) => term.toLowerCase());
+        return rawQueryTerms.every((term) => normalizedTerms.includes(term));
+      });
+    });
+  }, [data, hasQueryTerms, rawQueryTerms, sortedResults]);
+
+  const partialResults = useMemo(() => {
+    if (!data) {
+      return [];
+    }
+    if (!hasQueryTerms) {
+      return sortedResults;
+    }
+    const exactIds = new Set(exactResults.map((item) => item.tender.id));
+    return sortedResults.filter((item) => !exactIds.has(item.tender.id));
+  }, [data, exactResults, hasQueryTerms, sortedResults]);
+
+  const filteredResults = activeTab === "exact" ? exactResults : partialResults;
 
   const updateSearchParams = (nextState: SearchFormState, nextPage = 1) => {
     const next = new URLSearchParams();
@@ -241,9 +313,7 @@ export default function SearchPage() {
     ];
     const csv = [header, ...rows]
       .map((row) =>
-        row
-          .map((field) => `"${String(field).replace(/"/g, '""')}"`)
-          .join(","),
+        row.map((field) => `"${String(field).replace(/"/g, '""')}"`).join(","),
       )
       .join("\n");
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
@@ -285,7 +355,9 @@ export default function SearchPage() {
 
           <div className="grid gap-4 md:grid-cols-4">
             <div className="flex flex-col gap-2">
-              <label className="text-sm font-medium text-slate-600">Статус</label>
+              <label className="text-sm font-medium text-slate-600">
+                Статус
+              </label>
               <select
                 value={formState.status}
                 onChange={(event) =>
@@ -431,7 +503,9 @@ export default function SearchPage() {
             Введіть запит, щоб побачити результати.
           </p>
         ) : isLoading ? (
-          <p className="text-base text-slate-500">Завантаження результатів...</p>
+          <p className="text-base text-slate-500">
+            Завантаження результатів...
+          </p>
         ) : error ? (
           <p className="text-base text-red-600">Помилка: {error}</p>
         ) : data ? (
@@ -456,57 +530,147 @@ export default function SearchPage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              {sortedResults.map((item, index) => (
-                <div
-                  key={`${item.tender.id}-${index}`}
-                  className="rounded-2xl border border-slate-200 p-5"
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("exact")}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    activeTab === "exact"
+                      ? "bg-slate-900 text-white"
+                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
                 >
-                  <div className="flex flex-col gap-2">
-                    <Link
-                      href={`/tender/${item.tender.id}?from=${encodeURIComponent(
-                        currentParams,
-                      )}`}
-                      className="text-lg font-semibold text-slate-900 hover:text-slate-700"
-                    >
-                      {item.tender.title || "Без назви"}
-                    </Link>
-                    <p className="text-sm text-slate-500">
-                      {item.tender.procuringEntity || "Невідомий замовник"}
-                    </p>
-                    <div className="flex flex-wrap gap-4 text-sm text-slate-600">
-                      <span>Статус: {item.tender.status ?? "—"}</span>
-                      <span>
-                        Сума: {formatCurrency(item.tender.valueAmount, item.tender.valueCurrency)}
-                      </span>
-                      <span>Дата: {formatDate(item.tender.datePublished)}</span>
-                    </div>
-                    {(item.highlights.length > 0 || (item.matchedFields ?? []).length > 0) && (
-                      <div className="mt-2 text-xs text-slate-500">
-                        {(item.matchedFields ?? []).length > 0 && (
-                          <p>
-                            Знайдено за: {(item.matchedFields ?? [])
-                              .map((field) => fieldLabelMap[field] ?? field)
-                              .join(", ")}
-                          </p>
-                        )}
-                        {item.highlights.length > 0 && (
-                          <p>Підсвітка термінів: {item.highlights.join(", ")}</p>
-                        )}
+                  Повний збіг ({exactResults.length})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("partial")}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                    activeTab === "partial"
+                      ? "bg-slate-900 text-white"
+                      : "border border-slate-200 text-slate-600 hover:bg-slate-50"
+                  }`}
+                >
+                  Частковий збіг ({partialResults.length})
+                </button>
+              </div>
+              {filteredResults.length === 0 ? (
+                <p className="text-sm text-slate-500">
+                  Немає результатів для вибраної категорії.
+                </p>
+              ) : (
+                filteredResults.map((item, index) => (
+                  <div
+                    key={`${item.tender.id}-${index}`}
+                    className="rounded-2xl border border-slate-200 p-5"
+                  >
+                    <div className="flex flex-col gap-2">
+                      <Link
+                        href={`/tender/${item.tender.id}?from=${encodeURIComponent(
+                          currentParams,
+                        )}`}
+                        className="text-lg font-semibold text-slate-900 hover:text-slate-700"
+                      >
+                        {item.tender.title || "Без назви"}
+                      </Link>
+                      <p className="text-sm text-slate-500">
+                        {item.tender.procuringEntity || "Невідомий замовник"}
+                      </p>
+                      <div className="flex flex-wrap gap-4 text-sm text-slate-600">
+                        <span className="flex items-center gap-2">
+                          <span className="text-slate-600">Статус:</span>
+                          <span
+                            className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(
+                              item.tender.status,
+                            )}`}
+                          >
+                            {formatStatus(item.tender.status)}
+                          </span>
+                        </span>
+                        <span>
+                          Сума:{" "}
+                          {formatCurrency(
+                            item.tender.valueAmount,
+                            item.tender.valueCurrency,
+                          )}
+                        </span>
+                        <span>
+                          Дата: {formatDate(item.tender.datePublished)}
+                        </span>
                       </div>
-                    )}
-                    <p className="mt-2 text-sm text-slate-600">
-                      {item.tender.description || "Опис відсутній."}
-                    </p>
+                      {(() => {
+                        const matchedTerms = item.matchedTerms ?? [];
+
+                        if (
+                          item.highlights.length === 0 &&
+                          matchedTerms.length === 0
+                        ) {
+                          return null;
+                        }
+
+                        return (
+                          <div className="mt-2 flex flex-col gap-2 text-xs text-slate-500">
+                            {matchedTerms.length > 0 && (
+                              <div className="flex flex-col gap-3">
+                                {matchedTerms.map((match) => {
+                                  if (match.terms.length === 0) {
+                                    return null;
+                                  }
+                                  const terms = Array.from(
+                                    new Set(
+                                      match.terms.map((term) =>
+                                        term.toLowerCase(),
+                                      ),
+                                    ),
+                                  );
+                                  return (
+                                    <div
+                                      key={`${item.tender.id}-${match.field}`}
+                                      className="flex flex-col items-start gap-2"
+                                    >
+                                      <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+                                        {fieldLabelMap[match.field] ??
+                                          match.field}
+                                      </span>
+                                      <div className="flex flex-wrap gap-2">
+                                        {terms.map((term) => (
+                                          <span
+                                            key={`${item.tender.id}-${match.field}-${term}`}
+                                            className="rounded-full border border-slate-200 bg-white px-2 py-1 text-xs text-slate-600"
+                                          >
+                                            {term}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                            {item.highlights.length > 0 && (
+                              <p>
+                                Підсвітка термінів: {item.highlights.join(", ")}
+                              </p>
+                            )}
+                          </div>
+                        );
+                      })()}
+                      <p className="mt-2 text-sm text-slate-600">
+                        {item.tender.description || "Опис відсутній."}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
 
             <div className="flex flex-col gap-3 border-t border-slate-100 pt-4 text-sm text-slate-600 sm:flex-row sm:items-center sm:justify-between">
               <button
                 type="button"
                 disabled={page <= 1}
-                onClick={() => updateSearchParams(formState, Math.max(1, page - 1))}
+                onClick={() =>
+                  updateSearchParams(formState, Math.max(1, page - 1))
+                }
                 className="rounded-xl border border-slate-200 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 Попередня сторінка
@@ -518,7 +682,12 @@ export default function SearchPage() {
                 <button
                   type="button"
                   disabled={page >= totalPages}
-                  onClick={() => updateSearchParams(formState, Math.min(totalPages, page + 1))}
+                  onClick={() =>
+                    updateSearchParams(
+                      formState,
+                      Math.min(totalPages, page + 1),
+                    )
+                  }
                   className="rounded-xl border border-slate-200 px-4 py-2 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Наступна сторінка

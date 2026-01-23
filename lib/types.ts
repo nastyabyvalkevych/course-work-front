@@ -18,6 +18,7 @@ export type SearchResultItem = {
   score: number;
   highlights: string[];
   matchedFields: string[];
+  matchedTerms?: Array<{ field: string; terms: string[] }>;
 };
 
 export type SearchResponse = {
@@ -28,6 +29,7 @@ export type SearchResponse = {
     queryTimeMs: number;
     k1: number;
     b: number;
+    queryTerms: string[];
   };
 };
 

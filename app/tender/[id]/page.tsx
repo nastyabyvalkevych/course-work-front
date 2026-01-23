@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { fetchJson } from "@/lib/api";
+import { formatStatus, statusBadgeClass } from "@/lib/status";
 import { Tender } from "@/lib/types";
 
 const formatCurrency = (value?: number | null, currency?: string | null) => {
@@ -125,9 +126,16 @@ export default async function TenderPage({ params, searchParams }: PageProps) {
         <h1 className="text-3xl font-semibold text-slate-900">
           {tender.title || "Без назви"}
         </h1>
-        <p className="text-sm text-slate-500">
-          ID: {tender.prozorroId} · Статус: {tender.status ?? "—"}
-        </p>
+        <div className="flex flex-wrap items-center gap-3 text-sm text-slate-500">
+          <span>ID: {tender.prozorroId}</span>
+          <span
+            className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(
+              tender.status,
+            )}`}
+          >
+            {formatStatus(tender.status)}
+          </span>
+        </div>
       </div>
 
       <div className="rounded-3xl bg-white p-8 shadow-sm">
@@ -187,10 +195,16 @@ export default async function TenderPage({ params, searchParams }: PageProps) {
                   <span className="font-medium text-slate-900">Tender ID:</span>{" "}
                   {formatValue(raw?.tenderID)}
                 </p>
-                <p>
-                  <span className="font-medium text-slate-900">Статус:</span>{" "}
-                  {formatValue(raw?.status)}
-                </p>
+                <div className="flex items-center gap-2 text-sm text-slate-600">
+                  <span className="font-medium text-slate-900">Статус:</span>
+                  <span
+                    className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(
+                      raw?.status,
+                    )}`}
+                  >
+                    {formatStatus(raw?.status)}
+                  </span>
+                </div>
                 <p>
                   <span className="font-medium text-slate-900">Власник:</span>{" "}
                   {formatValue(raw?.owner)}
@@ -290,7 +304,16 @@ export default async function TenderPage({ params, searchParams }: PageProps) {
                 {bids.length ? (
                   bids.map((bid, index) => (
                     <div key={`${bid?.id ?? index}`} className="rounded-xl bg-slate-50 p-4">
-                      <p>Статус: {formatValue(bid?.status)}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600">Статус:</span>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(
+                            bid?.status,
+                          )}`}
+                        >
+                          {formatStatus(bid?.status)}
+                        </span>
+                      </div>
                       <p>Дата: {formatDate(bid?.date)}</p>
                       <p>
                         Сума: {formatCurrency(bid?.value?.amount, bid?.value?.currency)}
@@ -317,7 +340,16 @@ export default async function TenderPage({ params, searchParams }: PageProps) {
                 {awards.length ? (
                   awards.map((award, index) => (
                     <div key={`${award?.id ?? index}`} className="rounded-xl bg-slate-50 p-4">
-                      <p>Статус: {formatValue(award?.status)}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600">Статус:</span>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(
+                            award?.status,
+                          )}`}
+                        >
+                          {formatStatus(award?.status)}
+                        </span>
+                      </div>
                       <p>Дата: {formatDate(award?.date)}</p>
                       <p>
                         Сума: {formatCurrency(award?.value?.amount, award?.value?.currency)}
@@ -345,7 +377,16 @@ export default async function TenderPage({ params, searchParams }: PageProps) {
                   contracts.map((contract, index) => (
                     <div key={`${contract?.id ?? index}`} className="rounded-xl bg-slate-50 p-4">
                       <p>ID: {formatValue(contract?.contractID ?? contract?.id)}</p>
-                      <p>Статус: {formatValue(contract?.status)}</p>
+                      <div className="flex items-center gap-2">
+                        <span className="text-slate-600">Статус:</span>
+                        <span
+                          className={`rounded-full px-2 py-1 text-xs font-medium ${statusBadgeClass(
+                            contract?.status,
+                          )}`}
+                        >
+                          {formatStatus(contract?.status)}
+                        </span>
+                      </div>
                       <p>Дата: {formatDate(contract?.date)}</p>
                       <p>
                         Сума: {formatCurrency(
