@@ -1,0 +1,22 @@
+const fallbackBaseUrl = "http://localhost:3002";
+
+export const apiBaseUrl =
+  process.env.NEXT_PUBLIC_API_BASE_URL ??
+  (typeof window === "undefined" ? fallbackBaseUrl : "");
+
+export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${apiBaseUrl}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(init?.headers ?? {}),
+    },
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`API error: ${response.status}`);
+  }
+
+  return response.json() as Promise<T>;
+}
