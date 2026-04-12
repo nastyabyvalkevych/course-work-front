@@ -18,37 +18,61 @@ export default function StatsPage() {
   }, []);
 
   return (
-    <section className="flex flex-col gap-8">
-      <div className="rounded-3xl bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-semibold text-slate-900">Аналітика</h1>
-        <p className="mt-2 text-slate-600">
-          Загальна статистика щодо індексу Prozorro.
+    <section className="grid gap-10 lg:gap-14">
+      <div className="rounded-[2rem] bg-surface px-6 py-10 sm:px-10 lg:px-12">
+        <p className="text-[0.8rem] font-bold uppercase tracking-wider text-muted">
+          Аналітика індексу
+        </p>
+        <h1 className="mt-4 text-[clamp(2.5rem,5vw,4.5rem)] font-extrabold leading-[0.95] tracking-tight text-ink uppercase">
+          Стан пошукового
+          <br />
+          корпусу Prozorro
+        </h1>
+        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted">
+          Короткий оперативний зріз по загальній кількості тендерів, розподілу
+          статусів і найчастіших термінів у побудованому індексі.
         </p>
       </div>
 
-      <div className="rounded-3xl bg-white p-8 shadow-sm">
+      <div>
         {isLoading ? (
-          <p className="text-sm text-slate-500">Завантаження статистики...</p>
+          <div className="rounded-[2rem] bg-surface p-10 text-center">
+            <p className="text-xl font-bold text-ink">
+              Завантаження статистики...
+            </p>
+          </div>
         ) : error ? (
-          <p className="text-sm text-red-600">Помилка: {error}</p>
+          <div className="rounded-[2rem] bg-red-50 p-10 text-red-700">
+            <h2 className="text-2xl font-bold">Помилка</h2>
+            <p className="mt-2">{error}</p>
+          </div>
         ) : data?.message ? (
-          <p className="text-sm text-slate-500">{data.message}</p>
+          <div className="rounded-[2rem] bg-surface p-10">
+            <p className="text-xl text-ink">{data.message}</p>
+          </div>
         ) : data ? (
-          <div className="grid gap-8 lg:grid-cols-3">
-            <div className="rounded-2xl border border-slate-200 p-6">
-              <p className="text-sm text-slate-500">Всього тендерів</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="rounded-[2rem] bg-surface p-8">
+              <p className="text-[0.8rem] font-bold uppercase tracking-wider text-muted">
+                Всього тендерів
+              </p>
+              <p className="mt-8 text-6xl font-extrabold leading-none tracking-tight text-ink">
                 {data.totalTenders}
               </p>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-6">
-              <p className="text-sm font-semibold text-slate-700">Статуси</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-600">
+            <div className="rounded-[2rem] bg-surface p-8">
+              <p className="text-[0.8rem] font-bold uppercase tracking-wider text-muted">
+                Статуси
+              </p>
+              <ul className="mt-6 space-y-4 text-base font-semibold text-ink">
                 {data.statusDistribution.map((item) => (
-                  <li key={item.status} className="flex justify-between">
+                  <li
+                    key={item.status}
+                    className="flex items-center justify-between gap-4 border-b border-surface-strong pb-4 last:border-b-0 last:pb-0"
+                  >
                     <span>{item.status}</span>
-                    <span className="font-medium text-slate-900">
+                    <span className="font-bold text-muted">
                       {item.count}
                     </span>
                   </li>
@@ -56,13 +80,18 @@ export default function StatsPage() {
               </ul>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 p-6">
-              <p className="text-sm font-semibold text-slate-700">Топ-терми</p>
-              <ul className="mt-3 space-y-2 text-sm text-slate-600">
+            <div className="rounded-[2rem] bg-surface p-8">
+              <p className="text-[0.8rem] font-bold uppercase tracking-wider text-muted">
+                Топ-терми
+              </p>
+              <ul className="mt-6 space-y-4 text-base font-semibold text-ink">
                 {data.topTerms.map((term) => (
-                  <li key={term.term} className="flex justify-between">
-                    <span>{term.term}</span>
-                    <span className="font-medium text-slate-900">
+                  <li
+                    key={term.term}
+                    className="flex items-center justify-between gap-4 border-b border-surface-strong pb-4 last:border-b-0 last:pb-0"
+                  >
+                    <span className="max-w-[70%] truncate">{term.term}</span>
+                    <span className="font-bold text-muted">
                       {term.documentFrequency}
                     </span>
                   </li>
@@ -71,7 +100,9 @@ export default function StatsPage() {
             </div>
           </div>
         ) : (
-          <p className="text-sm text-slate-500">Немає даних.</p>
+          <div className="rounded-[2rem] bg-surface p-10">
+            <p className="text-xl text-muted">Немає даних.</p>
+          </div>
         )}
       </div>
     </section>

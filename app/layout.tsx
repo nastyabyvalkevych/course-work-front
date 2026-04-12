@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
 });
 
@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Prozorro Insight",
-  description: "Search and analyze Prozorro tenders",
+  description: "Пошук та аналіз закупівель Prozorro",
 };
 
 export default function RootLayout({
@@ -23,38 +23,59 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-slate-50 text-slate-900`}
-      >
+    <html lang="uk">
+      <body className={`${manrope.variable} ${geistMono.variable} antialiased`}>
         <div className="min-h-screen">
-          <header className="border-b border-slate-200 bg-white/80 backdrop-blur">
-            <div className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-4">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-500">
-                  Prozorro Insight
-                </p>
-                <p className="text-lg font-semibold text-slate-900">
-                  Тендерна аналітика
-                </p>
-              </div>
-              <nav className="flex gap-4 text-sm font-medium text-slate-600">
+          <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-sm border-b border-line/50">
+            <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-5 py-4 sm:px-6 lg:px-8">
+              <a href="/" className="flex items-center gap-3 group">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-sm font-extrabold tracking-[0.05em] text-canvas transition group-hover:bg-accent">
+                  PI
+                </div>
+                <div className="hidden sm:block">
+                  <p className="text-lg font-extrabold leading-none tracking-tight text-ink">
+                    Prozorro Insight
+                  </p>
+                  <p className="mt-0.5 text-xs font-medium text-muted">
+                    OSINT-аналітика закупівель
+                  </p>
+                </div>
+              </a>
+              <nav className="flex items-center gap-1 sm:gap-2">
                 <a
-                  className="rounded-full px-3 py-2 hover:bg-slate-100"
-                  href="/"
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
+                  href="/about"
                 >
-                  Головна
+                  Про проєкт
                 </a>
                 <a
-                  className="rounded-full px-3 py-2 hover:bg-slate-100"
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
+                  href="/search"
+                >
+                  Пошук
+                </a>
+                <a
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
+                  href="/osint"
+                >
+                  OSINT
+                </a>
+                <a
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/stats"
                 >
                   Статистика
                 </a>
+                <a
+                  className="ml-2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-canvas transition hover:bg-accent"
+                  href="/search"
+                >
+                  Почати
+                </a>
               </nav>
             </div>
           </header>
-          <main className="mx-auto w-full max-w-6xl px-6 py-10">
+          <main className="mx-auto w-full max-w-7xl px-5 pb-16 pt-8 sm:px-6 lg:px-8">
             {children}
           </main>
         </div>

@@ -21,25 +21,25 @@ const STATUS_LABELS: Record<string, string> = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-  active: "bg-blue-100 text-blue-700",
-  complete: "bg-emerald-100 text-emerald-700",
-  cancelled: "bg-rose-100 text-rose-700",
-  unsuccessful: "bg-orange-100 text-orange-700",
-  pending: "bg-amber-100 text-amber-700",
-  draft: "bg-slate-100 text-slate-600",
-  terminated: "bg-rose-100 text-rose-700",
-  "active.enquiries": "bg-blue-100 text-blue-700",
-  "active.tendering": "bg-blue-100 text-blue-700",
-  "active.pre-qualification": "bg-blue-100 text-blue-700",
-  "active.qualification": "bg-blue-100 text-blue-700",
-  "active.auction": "bg-indigo-100 text-indigo-700",
-  "active.awarded": "bg-indigo-100 text-indigo-700",
-  "active.contracting": "bg-indigo-100 text-indigo-700",
-  "active.signed": "bg-indigo-100 text-indigo-700",
-  "complete.early": "bg-emerald-100 text-emerald-700",
-  "cancelled.qualification": "bg-rose-100 text-rose-700",
-  "cancelled.tendering": "bg-rose-100 text-rose-700",
-  "unsuccessful.tendering": "bg-orange-100 text-orange-700",
+  active: "bg-[#f8e71c] text-black",
+  complete: "bg-white text-black",
+  cancelled: "bg-[#222222] text-[#ff9b9b]",
+  unsuccessful: "bg-[#222222] text-[#f8e71c]",
+  pending: "bg-[#222222] text-[#f0ddb2]",
+  draft: "bg-[#1a1a1a] text-[#96968c]",
+  terminated: "bg-[#222222] text-[#ff9b9b]",
+  "active.enquiries": "bg-[#f8e71c] text-black",
+  "active.tendering": "bg-[#f8e71c] text-black",
+  "active.pre-qualification": "bg-[#f8e71c] text-black",
+  "active.qualification": "bg-[#f8e71c] text-black",
+  "active.auction": "bg-[#f8e71c] text-black",
+  "active.awarded": "bg-white text-black",
+  "active.contracting": "bg-white text-black",
+  "active.signed": "bg-white text-black",
+  "complete.early": "bg-white text-black",
+  "cancelled.qualification": "bg-[#222222] text-[#ff9b9b]",
+  "cancelled.tendering": "bg-[#222222] text-[#ff9b9b]",
+  "unsuccessful.tendering": "bg-[#222222] text-[#f8e71c]",
 };
 
 export const formatStatus = (status?: string | null) => {
@@ -51,7 +51,7 @@ export const formatStatus = (status?: string | null) => {
 
 export const statusBadgeClass = (status?: string | null) => {
   if (!status) {
-    return "bg-slate-100 text-slate-600";
+    return "bg-[#1a1a1a] text-[#96968c]";
   }
-  return STATUS_COLORS[status] ?? "bg-slate-100 text-slate-600";
+  return STATUS_COLORS[status] ?? "bg-[#1a1a1a] text-[#96968c]";
 };
