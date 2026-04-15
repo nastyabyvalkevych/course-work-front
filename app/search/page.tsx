@@ -30,12 +30,7 @@ const profileOptions = [
   {
     value: "bm25f_default",
     label: "BM25F",
-    description: "Базове ранжування по 36 полях тендера з лематизацією.",
-  },
-  {
-    value: "da_bm25f_combined",
-    label: "BM25F + Exact Boost",
-    description: "Підсилює точні збіги в ключових полях для специфічних запитів.",
+    description: "Багатопольове ранжування по 36 полях тендера з лематизацією.",
   },
 ];
 
@@ -148,7 +143,8 @@ const initialFormState: SearchFormState = {
 };
 
 const getProfileMeta = (profile: string) =>
-  profileOptions.find((option) => option.value === profile) ?? profileOptions[1];
+  profileOptions.find((option) => option.value === profile) ??
+  profileOptions[1];
 
 const normalizePage = (value: number) =>
   Number.isFinite(value) && value > 0 ? Math.floor(value) : 1;
@@ -164,7 +160,7 @@ const normalizeFormState = (state: SearchFormState): SearchFormState => ({
 
 const buildFormStateFromParams = (params: URLSearchParams): SearchFormState => {
   const profile = params.has("profile")
-    ? params.get("profile") ?? ""
+    ? (params.get("profile") ?? "")
     : params.get("useMultifield") === "false"
       ? ""
       : DEFAULT_SEARCH_PROFILE;
@@ -235,8 +231,9 @@ const buildRequestBody = (state: SearchFormState, page: number) => {
 export default function SearchPage() {
   const [activeTab, setActiveTab] = useState<SearchTab>("partial");
   const [formState, setFormState] = useState<SearchFormState>(initialFormState);
-  const [submittedState, setSubmittedState] =
-    useState<SearchFormState | null>(null);
+  const [submittedState, setSubmittedState] = useState<SearchFormState | null>(
+    null,
+  );
   const [page, setPage] = useState(1);
   const [data, setData] = useState<SearchResponse | null>(null);
   const [results, setResults] = useState<SearchResultItem[]>([]);
@@ -256,7 +253,9 @@ export default function SearchPage() {
       const nextPage = normalizePage(Number(params.get("page") ?? "1"));
 
       setFormState(nextFormState);
-      setSubmittedState(nextFormState.q ? normalizeFormState(nextFormState) : null);
+      setSubmittedState(
+        nextFormState.q ? normalizeFormState(nextFormState) : null,
+      );
       setPage(nextPage);
       window.history.replaceState(window.history.state, "", "/search");
       hasHydratedRef.current = true;
@@ -342,7 +341,9 @@ export default function SearchPage() {
     ? Math.max(1, Math.ceil(data.total / DEFAULT_LIMIT))
     : 1;
 
-  const profileMeta = getProfileMeta(submittedState?.profile ?? formState.profile);
+  const profileMeta = getProfileMeta(
+    submittedState?.profile ?? formState.profile,
+  );
 
   const lemmatizedQueryTerms = useMemo(() => {
     if (!data?.metadata?.queryTerms?.length) {
@@ -530,8 +531,26 @@ export default function SearchPage() {
                 onClick={() => setShowFilters(!showFilters)}
                 className="h-12 rounded-xl border border-line bg-canvas px-4 text-sm font-semibold text-ink hover:bg-surface-strong transition flex items-center gap-2"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <line x1="4" x2="4" y1="21" y2="14" /><line x1="4" x2="4" y1="10" y2="3" /><line x1="12" x2="12" y1="21" y2="12" /><line x1="12" x2="12" y1="8" y2="3" /><line x1="20" x2="20" y1="21" y2="16" /><line x1="20" x2="20" y1="12" y2="3" /><line x1="2" x2="6" y1="14" y2="14" /><line x1="10" x2="14" y1="8" y2="8" /><line x1="18" x2="22" y1="16" y2="16" />
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <line x1="4" x2="4" y1="21" y2="14" />
+                  <line x1="4" x2="4" y1="10" y2="3" />
+                  <line x1="12" x2="12" y1="21" y2="12" />
+                  <line x1="12" x2="12" y1="8" y2="3" />
+                  <line x1="20" x2="20" y1="21" y2="16" />
+                  <line x1="20" x2="20" y1="12" y2="3" />
+                  <line x1="2" x2="6" y1="14" y2="14" />
+                  <line x1="10" x2="14" y1="8" y2="8" />
+                  <line x1="18" x2="22" y1="16" y2="16" />
                 </svg>
                 <span className="hidden sm:inline">Фільтри</span>
               </button>
@@ -552,7 +571,9 @@ export default function SearchPage() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs font-medium text-muted">Швидкий пошук:</span>
+            <span className="text-xs font-medium text-muted">
+              Швидкий пошук:
+            </span>
             {quickQueries.map((query) => (
               <button
                 key={query}
@@ -568,10 +589,14 @@ export default function SearchPage() {
           {showFilters && (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 pt-2 border-t border-line/50">
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Статус</label>
+                <label className="text-xs font-semibold text-muted">
+                  Статус
+                </label>
                 <select
                   value={formState.status}
-                  onChange={(e) => setFormState((p) => ({ ...p, status: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({ ...p, status: e.target.value }))
+                  }
                   className="h-10 rounded-lg bg-canvas px-3 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
                 >
                   {statusOptions.map((status) => (
@@ -582,10 +607,14 @@ export default function SearchPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Сума від</label>
+                <label className="text-xs font-semibold text-muted">
+                  Сума від
+                </label>
                 <input
                   value={formState.minValue}
-                  onChange={(e) => setFormState((p) => ({ ...p, minValue: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({ ...p, minValue: e.target.value }))
+                  }
                   type="number"
                   min={0}
                   placeholder="0"
@@ -593,10 +622,14 @@ export default function SearchPage() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Сума до</label>
+                <label className="text-xs font-semibold text-muted">
+                  Сума до
+                </label>
                 <input
                   value={formState.maxValue}
-                  onChange={(e) => setFormState((p) => ({ ...p, maxValue: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({ ...p, maxValue: e.target.value }))
+                  }
                   type="number"
                   min={0}
                   placeholder="10 000 000"
@@ -604,28 +637,40 @@ export default function SearchPage() {
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Дата від</label>
+                <label className="text-xs font-semibold text-muted">
+                  Дата від
+                </label>
                 <input
                   value={formState.dateFrom}
-                  onChange={(e) => setFormState((p) => ({ ...p, dateFrom: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({ ...p, dateFrom: e.target.value }))
+                  }
                   type="date"
                   className="h-10 rounded-lg bg-canvas px-3 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Дата до</label>
+                <label className="text-xs font-semibold text-muted">
+                  Дата до
+                </label>
                 <input
                   value={formState.dateTo}
-                  onChange={(e) => setFormState((p) => ({ ...p, dateTo: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({ ...p, dateTo: e.target.value }))
+                  }
                   type="date"
                   className="h-10 rounded-lg bg-canvas px-3 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
                 />
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Сортування</label>
+                <label className="text-xs font-semibold text-muted">
+                  Сортування
+                </label>
                 <select
                   value={formState.sort}
-                  onChange={(e) => setFormState((p) => ({ ...p, sort: e.target.value }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({ ...p, sort: e.target.value }))
+                  }
                   className="h-10 rounded-lg bg-canvas px-3 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
                 >
                   <option value="score">Релевантність</option>
@@ -633,14 +678,24 @@ export default function SearchPage() {
                 </select>
               </div>
               <div className="flex flex-col gap-1">
-                <label className="text-xs font-semibold text-muted">Профіль</label>
+                <label className="text-xs font-semibold text-muted">
+                  Профіль
+                </label>
                 <select
                   value={formState.profile}
-                  onChange={(e) => setFormState((p) => ({ ...p, profile: e.target.value, useMultifield: e.target.value !== "" }))}
+                  onChange={(e) =>
+                    setFormState((p) => ({
+                      ...p,
+                      profile: e.target.value,
+                      useMultifield: e.target.value !== "",
+                    }))
+                  }
                   className="h-10 rounded-lg bg-canvas px-3 text-sm font-medium text-ink focus:outline-none focus:ring-2 focus:ring-accent/30"
                 >
                   {profileOptions.map((opt) => (
-                    <option key={opt.value || "single"} value={opt.value}>{opt.label}</option>
+                    <option key={opt.value || "single"} value={opt.value}>
+                      {opt.label}
+                    </option>
                   ))}
                 </select>
               </div>
@@ -665,9 +720,7 @@ export default function SearchPage() {
               <h2 className="text-2xl font-extrabold tracking-tight text-ink">
                 Шукаємо...
               </h2>
-              <p className="mt-2 text-muted">
-                Запит: “{submittedState.q}”
-              </p>
+              <p className="mt-2 text-muted">Запит: “{submittedState.q}”</p>
             </div>
           ) : error ? (
             <div className="rounded-[2rem] bg-red-50 p-10 text-red-700">
@@ -698,7 +751,10 @@ export default function SearchPage() {
                 <div className="flex flex-wrap items-center gap-2 mb-4 text-xs text-muted">
                   <span className="font-medium">Леми:</span>
                   {data.metadata.queryTerms.map((term) => (
-                    <span key={term} className="rounded bg-surface px-2 py-0.5 font-medium text-ink">
+                    <span
+                      key={term}
+                      className="rounded bg-surface px-2 py-0.5 font-medium text-ink"
+                    >
                       {term}
                     </span>
                   ))}
@@ -754,10 +810,13 @@ export default function SearchPage() {
                               {item.tender.title || "Без назви"}
                             </h3>
                             <p className="mt-1 text-sm font-semibold text-muted">
-                              {item.tender.procuringEntity || "Замовник не вказаний"}
+                              {item.tender.procuringEntity ||
+                                "Замовник не вказаний"}
                             </p>
                           </div>
-                          <span className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusBadgeClass(item.tender.status)}`}>
+                          <span
+                            className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold ${statusBadgeClass(item.tender.status)}`}
+                          >
                             {formatStatus(item.tender.status)}
                           </span>
                         </div>
@@ -782,40 +841,55 @@ export default function SearchPage() {
                           </div>
                         )}
 
-                        {item.matchedFields && item.matchedFields.length > 0 && (
-                          <div className="mt-5 border-t border-line/50 pt-4">
-                            <p className="mb-2.5 text-[0.75rem] font-bold uppercase tracking-wider text-muted">
-                              Знайдено у полях:
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {item.matchedFields.map((field) => {
-                                const fieldTerms = item.matchedTerms?.find((mt) => mt.field === field)?.terms || [];
-                                return (
-                                  <div key={field} className="group/field relative">
-                                    <span className="inline-block rounded-md bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700 cursor-help transition hover:bg-stone-200">
-                                      {fieldLabelMap[field] || field}
-                                    </span>
-                                    {fieldTerms.length > 0 && (
-                                      <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/field:opacity-100 transition-opacity z-50">
-                                        <div className="whitespace-nowrap rounded-lg bg-ink px-3 py-2 text-xs font-medium text-canvas shadow-lg">
-                                          {fieldTerms.slice(0, 5).join(", ")}
-                                          {fieldTerms.length > 5 && <span className="text-canvas/70"> +{fieldTerms.length - 5}</span>}
+                        {item.matchedFields &&
+                          item.matchedFields.length > 0 && (
+                            <div className="mt-5 border-t border-line/50 pt-4">
+                              <p className="mb-2.5 text-[0.75rem] font-bold uppercase tracking-wider text-muted">
+                                Знайдено у полях:
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {item.matchedFields.map((field) => {
+                                  const fieldTerms =
+                                    item.matchedTerms?.find(
+                                      (mt) => mt.field === field,
+                                    )?.terms || [];
+                                  return (
+                                    <div
+                                      key={field}
+                                      className="group/field relative"
+                                    >
+                                      <span className="inline-block rounded-md bg-stone-100 px-2.5 py-1 text-xs font-bold text-stone-700 cursor-help transition hover:bg-stone-200">
+                                        {fieldLabelMap[field] || field}
+                                      </span>
+                                      {fieldTerms.length > 0 && (
+                                        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 opacity-0 group-hover/field:opacity-100 transition-opacity z-50">
+                                          <div className="whitespace-nowrap rounded-lg bg-ink px-3 py-2 text-xs font-medium text-canvas shadow-lg">
+                                            {fieldTerms.slice(0, 5).join(", ")}
+                                            {fieldTerms.length > 5 && (
+                                              <span className="text-canvas/70">
+                                                {" "}
+                                                +{fieldTerms.length - 5}
+                                              </span>
+                                            )}
+                                          </div>
+                                          <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-ink" />
                                         </div>
-                                        <div className="absolute top-full left-1/2 -translate-x-1/2 -mt-1 border-4 border-transparent border-t-ink" />
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
 
                         <div className="mt-6 flex flex-wrap items-center gap-4 text-sm">
                           <div className="flex items-center gap-2">
                             <span className="text-muted">Сума:</span>
                             <span className="font-bold text-ink">
-                              {formatCurrency(item.tender.valueAmount, item.tender.valueCurrency)}
+                              {formatCurrency(
+                                item.tender.valueAmount,
+                                item.tender.valueCurrency,
+                              )}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
@@ -865,18 +939,14 @@ export default function SearchPage() {
               <div className="mt-6 flex flex-col gap-5 text-sm">
                 <div className="rounded-xl bg-accent/5 border border-accent/10 p-4">
                   <p className="font-semibold text-ink mb-1">
-                    {data.metadata.profile === "da_bm25f_combined"
-                      ? "Пошук з бустом для кодів"
-                      : data.metadata.profile === "bm25f_default"
-                        ? "Розумний пошук"
-                        : "Базовий пошук"}
+                    {data.metadata.profile === "bm25f_default"
+                      ? "Розумний пошук (BM25F)"
+                      : "Базовий пошук (BM25)"}
                   </p>
                   <p className="text-muted text-sm leading-relaxed">
-                    {data.metadata.profile === "da_bm25f_combined"
-                      ? "Додатково підвищує результати з точними збігами ЄДРПОУ та CPV-кодів."
-                      : data.metadata.profile === "bm25f_default"
-                        ? "Враховує де знайдено слово: в назві, в учасниках чи в документах."
-                        : "Шукає слова будь-де в тендері без врахування контексту."}
+                    {data.metadata.profile === "bm25f_default"
+                      ? "Враховує де знайдено слово: в назві, в учасниках чи в документах."
+                      : "Шукає слова будь-де в тендері без врахування контексту."}
                   </p>
                 </div>
 
@@ -889,11 +959,15 @@ export default function SearchPage() {
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted">Всі слова знайдено</span>
-                      <span className="font-bold text-green-600">{exactResults.length}</span>
+                      <span className="font-bold text-green-600">
+                        {exactResults.length}
+                      </span>
                     </div>
                     <div className="flex justify-between items-center">
                       <span className="text-muted">Частина слів</span>
-                      <span className="font-bold text-amber-600">{partialResults.length}</span>
+                      <span className="font-bold text-amber-600">
+                        {partialResults.length}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -902,7 +976,10 @@ export default function SearchPage() {
                   <p className="font-semibold text-ink mb-3">Ваш запит</p>
                   <div className="flex flex-wrap gap-1.5">
                     {data.metadata.queryTerms.map((term, i) => (
-                      <span key={i} className="bg-accent/10 text-accent px-2 py-0.5 rounded text-xs font-medium">
+                      <span
+                        key={i}
+                        className="bg-accent/10 text-accent px-2 py-0.5 rounded text-xs font-medium"
+                      >
                         {term}
                       </span>
                     ))}
@@ -918,10 +995,14 @@ export default function SearchPage() {
                     <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
                       <div
                         className="h-full bg-green-500 rounded-full"
-                        style={{ width: `${Math.min(100, Math.max(5, 100 - data.metadata.queryTimeMs / 10))}%` }}
+                        style={{
+                          width: `${Math.min(100, Math.max(5, 100 - data.metadata.queryTimeMs / 10))}%`,
+                        }}
                       />
                     </div>
-                    <span className="text-xs font-mono text-muted">{data.metadata.queryTimeMs} мс</span>
+                    <span className="text-xs font-mono text-muted">
+                      {data.metadata.queryTimeMs} мс
+                    </span>
                   </div>
                 </div>
 
