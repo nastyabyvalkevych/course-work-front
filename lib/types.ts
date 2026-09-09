@@ -118,3 +118,142 @@ export type OsintSignal = {
   description: string;
   tone: "danger" | "warning" | "info";
 };
+
+// ---------------------------------------------------------------- risk ----
+
+export type RiskContribution = {
+  feature: string;
+  label: string;
+  value: number;
+  contribution: number;
+};
+
+export type RiskNeighbor = {
+  edrpou: string;
+  name: string | null;
+  weight: number;
+  score: number;
+  label: boolean;
+};
+
+export type RiskRankingItem = {
+  edrpou: string;
+  name: string | null;
+  score: number;
+  rank: number;
+  percentile: number;
+  label: boolean;
+  firstDecision: string | null;
+  group: string;
+  coverage: string;
+  nTenders: number;
+  nWon: number;
+  winRate: number;
+  degree: number;
+};
+
+export type RiskRanking = {
+  total: number;
+  limit: number;
+  offset: number;
+  items: RiskRankingItem[];
+};
+
+export type RiskSummary = {
+  modelVersion: string;
+  computedAt: string;
+  companiesScored: number;
+  companiesInRegister: number;
+  tendersInDatabase: number;
+  coverage: Array<{ group: string; coverage: string; count: number }>;
+  register: Array<{ version: string; rows: number; latestDecision: string | null }>;
+};
+
+export type RiskDecision = {
+  decisionNumber: string;
+  decisionDate: string;
+  body: string | null;
+  courtCaseNumber: string | null;
+  courtContent: string | null;
+};
+
+export type RiskCoBidder = {
+  edrpou: string;
+  name: string | null;
+  sharedTenders: number;
+  theyWon: number;
+  weWon: number;
+  score: number | null;
+  label: boolean | null;
+  rank: number | null;
+};
+
+export type RiskRecentTender = {
+  id: number;
+  tenderID: string | null;
+  title: string | null;
+  procuringEntity: string | null;
+  datePublished: string | null;
+  valueAmount: number | null;
+  bidders: number;
+  won: boolean;
+};
+
+export type RiskCompany = RiskRankingItem & {
+  features: Record<string, number>;
+  contributions: RiskContribution[];
+  topNeighbors: RiskNeighbor[];
+  modelVersion: string;
+  computedAt: string;
+  decisions: RiskDecision[];
+  coBidders: RiskCoBidder[];
+  recentTenders: RiskRecentTender[];
+};
+
+export type RiskGraphNode = {
+  edrpou: string;
+  name: string | null;
+  score: number | null;
+  label: boolean | null;
+  nTenders: number;
+  center: boolean;
+};
+
+export type RiskGraph = {
+  nodes: RiskGraphNode[];
+  edges: Array<{ source: string; target: string; weight: number }>;
+};
+
+export type RiskTender = {
+  tender: {
+    id: number;
+    prozorroId: string;
+    tenderID: string | null;
+    title: string | null;
+    procuringEntity: string | null;
+    valueAmount: number | null;
+    valueCurrency: string | null;
+    status: string | null;
+    datePublished: string | null;
+    procurementMethodType: string | null;
+  };
+  participants: Array<{
+    edrpou: string;
+    name: string | null;
+    bidAmount: number | null;
+    isWinner: boolean;
+    score: number | null;
+    rank: number | null;
+    label: boolean;
+    nTenders: number | null;
+    winRate: number | null;
+  }>;
+  pairs: Array<{ a: string; b: string; sharedTenders: number; aWon: number; bWon: number }>;
+  signals: {
+    biddersCount: number;
+    maxParticipantScore: number;
+    knownParticipants: number;
+    repeatedPairs: number;
+    tenderRisk: number;
+  };
+};
