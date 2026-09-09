@@ -134,6 +134,7 @@ export type RiskNeighbor = {
   weight: number;
   score: number;
   label: boolean;
+  influence?: number; // change of this company's score if the edge to the neighbour is removed
 };
 
 export type RiskRankingItem = {

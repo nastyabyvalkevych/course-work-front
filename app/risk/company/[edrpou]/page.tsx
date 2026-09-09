@@ -142,6 +142,31 @@ export default function CompanyRiskPage() {
         </Card>
       </div>
 
+      {data.topNeighbors.some((n) => n.influence !== undefined) && (
+        <Card title="Які партнери найбільше впливають на оцінку">
+          <p className="mb-3 text-xs text-muted">
+            Наскільки впав би індекс ризику цієї компанії, якби зв&apos;язку з партнером не було. Розраховано
+            повторним прогоном графової моделі без відповідного ребра.
+          </p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {[...data.topNeighbors]
+              .filter((n) => n.influence !== undefined)
+              .sort((a, b) => (b.influence ?? 0) - (a.influence ?? 0))
+              .map((n) => (
+                <li key={n.edrpou} className="flex items-center justify-between rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                  <div className="min-w-0">
+                    <Link href={`/risk/company/${n.edrpou}`} className="font-semibold text-ink hover:text-accent">{n.name ?? n.edrpou}</Link>
+                    <div className="text-xs text-muted">{n.weight} спільних тендерів{n.label ? " · у реєстрі АМКУ" : ""}</div>
+                  </div>
+                  <span className={`ml-3 font-mono text-sm ${(n.influence ?? 0) > 0 ? "text-red-700" : "text-green-700"}`}>
+                    {(n.influence ?? 0) > 0 ? "+" : ""}{((n.influence ?? 0) * 100).toFixed(1)} п.п.
+                  </span>
+                </li>
+              ))}
+          </ul>
+        </Card>
+      )}
+
       <Card title="З ким постійно зустрічається на торгах">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
