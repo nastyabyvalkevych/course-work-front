@@ -153,6 +153,24 @@ export type RiskRankingItem = {
   degree: number;
 };
 
+export type RiskRegion = {
+  region: string;
+  companies: number;
+  sanctioned: number;
+  sanctionedShare: number;
+  highRisk: number;
+  highRiskShare: number;
+  meanScore: number;
+  medianScore: number;
+  tendersAsBidder: number;
+};
+
+export type RiskRegions = {
+  minTenders: number;
+  totalCompanies: number;
+  regions: RiskRegion[];
+};
+
 export type RiskRanking = {
   total: number;
   limit: number;

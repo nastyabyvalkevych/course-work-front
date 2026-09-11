@@ -68,6 +68,12 @@ export default function RootLayout({
                 </a>
                 <a
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
+                  href="/risk/map"
+                >
+                  Мапа
+                </a>
+                <a
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/stats"
                 >
                   Статистика

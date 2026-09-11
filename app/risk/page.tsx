@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { FormEvent, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
 import { date, num, pct, riskBadgeClass, riskLabel } from "@/lib/risk";
@@ -18,8 +18,10 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
   );
 }
 
-export default function RiskHome() {
+function RiskHomeInner() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const region = searchParams.get("region") ?? "";
   const [summary, setSummary] = useState<RiskSummary | null>(null);
   const [ranking, setRanking] = useState<RiskRanking | null>(null);
   const [q, setQ] = useState("");
@@ -49,11 +51,12 @@ export default function RiskHome() {
       fullCoverageOnly: fullOnly ? "1" : "0",
     });
     if (q.trim()) params.set("q", q.trim());
+    if (region) params.set("region", region);
     fetchJson<RiskRanking>(`/api/risk/ranking?${params}`)
       .then(setRanking)
       .catch((e) => setError(String(e)))
       .finally(() => setLoading(false));
-  }, [q, excludeKnown, fullOnly, minTenders, offset]);
+  }, [q, excludeKnown, fullOnly, minTenders, offset, region]);
 
   const onCompanySubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -131,7 +134,9 @@ export default function RiskHome() {
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-xl font-bold uppercase tracking-wide text-ink">Рейтинг ризику</h2>
+          <h2 className="text-xl font-bold uppercase tracking-wide text-ink">
+            Рейтинг ризику{region ? <span className="ml-2 text-base font-semibold normal-case text-muted">· {region} <Link href="/risk" className="text-accent">скинути</Link> · <Link href="/risk/map" className="text-accent">мапа</Link></span> : <Link href="/risk/map" className="ml-3 text-sm font-semibold normal-case text-accent">на мапі →</Link>}
+          </h2>
           <div className="flex flex-wrap items-center gap-4 text-sm text-ink">
             <label className="flex items-center gap-2">
               <input type="checkbox" checked={excludeKnown} onChange={(e) => { setExcludeKnown(e.target.checked); setOffset(0); }} />
@@ -210,5 +215,13 @@ export default function RiskHome() {
         )}
       </section>
     </div>
+  );
+}
+
+export default function RiskHome() {
+  return (
+    <Suspense fallback={<p className="text-muted">Завантаження…</p>}>
+      <RiskHomeInner />
+    </Suspense>
   );
 }
