@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Manrope } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -28,7 +29,7 @@ export default function RootLayout({
         <div className="min-h-screen">
           <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-sm border-b border-line/50">
             <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-5 py-4 sm:px-6 lg:px-8">
-              <a href="/" className="flex items-center gap-3 group">
+              <Link href="/" className="flex items-center gap-3 group">
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-sm font-extrabold tracking-[0.05em] text-canvas transition group-hover:bg-accent">
                   PI
                 </div>
@@ -40,44 +41,44 @@ export default function RootLayout({
                     Ризик змови на торгах
                   </p>
                 </div>
-              </a>
+              </Link>
               <nav className="flex items-center gap-1 sm:gap-2">
-                <a
+                <Link
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/about"
                 >
                   Про проєкт
-                </a>
-                <a
+                </Link>
+                <Link
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/search"
                 >
                   Пошук
-                </a>
-                <a
+                </Link>
+                <Link
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/risk"
                 >
                   Ризики
-                </a>
-                <a
+                </Link>
+                <Link
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/risk/map"
                 >
                   Мапа
-                </a>
-                <a
+                </Link>
+                <Link
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/risk/backtest"
                 >
                   Перевірка
-                </a>
-                <a
+                </Link>
+                <Link
                   className="ml-2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-canvas transition hover:bg-accent"
                   href="/risk"
                 >
                   Почати
-                </a>
+                </Link>
               </nav>
             </div>
           </header>
