@@ -80,7 +80,8 @@ export default function BacktestPage() {
   const [limit, setLimit] = useState(100);
   const [data, setData] = useState<Backtest | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showAllCaught, setShowAllCaught] = useState(false);
+  const [view, setView] = useState<"top" | "caught">("top");
+  const [yearFilter, setYearFilter] = useState<string>("all");
 
   useEffect(() => {
     fetchJson<BacktestList>("/api/risk/backtest")
@@ -103,8 +104,33 @@ export default function BacktestPage() {
   const p100 = useMemo(() => data?.curve.find((c) => c.k === 100), [data]);
   const hits100 = useMemo(() => (data ? data.top.slice(0, 100).filter((t) => t.outcome === "caught").length : 0), [data]);
   const caughtSorted = useMemo(() => (data ? [...data.caughtLater].sort((a, b) => a.rankUsed - b.rankUsed) : []), [data]);
-  const inTop100 = caughtSorted.filter((c) => c.rankUsed <= 100).length;
   const inTop10pct = data ? Math.round(data.recallTop10Pct * data.totalCaught) : 0;
+  const decisionYears = useMemo(() => {
+    if (!data) return [] as number[];
+    const ys = new Set<number>();
+    data.caughtLater.forEach((c) => c.firstDecision && ys.add(new Date(c.firstDecision).getFullYear()));
+    return [...ys].sort();
+  }, [data]);
+  const YEAR_CLS = ["bg-red-700", "bg-red-500", "bg-orange-400", "bg-amber-400"];
+  const yearCls = (y: number) => YEAR_CLS[Math.max(0, Math.min(YEAR_CLS.length - 1, y - (year ?? y) - 1))];
+  const byYear = (() => {
+    if (!data || !year) return [] as { label: string; count: number; cls: string }[];
+    const top100 = data.top.slice(0, 100);
+    const out = decisionYears.map((y) => ({
+      label: String(y),
+      count: top100.filter((t) => t.outcome === "caught" && t.firstDecision && new Date(t.firstDecision).getFullYear() === y).length,
+      cls: yearCls(y),
+    }));
+    out.push({ label: "без рішення", count: top100.filter((t) => t.outcome !== "caught").length, cls: "bg-slate-300" });
+    return out;
+  })();
+  const rows = (() => {
+    if (!data) return [];
+    const base = view === "top" ? data.top.slice(0, limit) : caughtSorted;
+    if (yearFilter === "all") return base;
+    if (yearFilter === "none") return base.filter((t) => t.outcome !== "caught");
+    return base.filter((t) => t.firstDecision && new Date(t.firstDecision).getFullYear() === Number(yearFilter));
+  })();
 
   return (
     <div className="space-y-8">
@@ -195,78 +221,92 @@ export default function BacktestPage() {
             </div>
           </section>
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <section className="rounded-2xl border border-line bg-surface p-5">
-              <h2 className="text-base font-bold text-ink">Список моделі на 31.12.{year}</h2>
-              <p className="mb-3 text-sm text-muted">Хто стояв на верху, і що з ним сталося потім.</p>
-              <div className="mb-2 flex items-center gap-2 text-xs">
-                показати
-                <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded border border-line bg-white px-2 py-0.5">
-                  {[50, 100, 200, 500].map((v) => <option key={v} value={v}>{v}</option>)}
-                </select>
+          <section className="rounded-2xl border border-line bg-surface p-5">
+            <h2 className="text-base font-bold text-ink">Список моделі на 31.12.{year} і що сталося з кожною компанією</h2>
+            <p className="mb-3 text-sm text-muted">
+              Модель склала цей список наприкінці {year} року. Стовпець «Коли покарали» показує, через скільки часу АМКУ виніс рішення:
+              часто це не наступний рік, а через два-три.
+            </p>
+
+            <div className="mb-4 rounded-xl border border-line bg-white p-3 text-sm">
+              <p className="mb-2 text-xs font-bold uppercase tracking-wider text-muted">Топ-100 списку: коли їх покарали</p>
+              <div className="flex h-5 w-full overflow-hidden rounded">
+                {byYear.map((b) => b.count > 0 && (
+                  <div key={b.label} title={`${b.label}: ${b.count}`} className={`${b.cls} flex items-center justify-center text-[0.65rem] font-bold text-white`} style={{ width: `${b.count}%` }}>{b.count}</div>
+                ))}
               </div>
-              <div className="max-h-[560px] overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-surface text-left text-xs uppercase text-muted">
-                    <tr><th className="py-2 pr-2">Місце</th><th className="py-2 pr-2">Компанія</th><th className="py-2 pr-2">Тендерів</th><th className="py-2">Що сталося</th></tr>
-                  </thead>
-                  <tbody>
-                    {data.top.slice(0, limit).map((t) => (
+              <div className="mt-2 flex flex-wrap gap-3 text-xs text-muted">
+                {byYear.map((b) => <span key={b.label} className="flex items-center gap-1"><span className={`inline-block h-2.5 w-2.5 rounded-sm ${b.cls}`} />{b.label}: {b.count}</span>)}
+              </div>
+            </div>
+
+            <div className="mb-3 flex flex-wrap items-center gap-4 text-xs">
+              <label className="flex items-center gap-2">
+                показати
+                <select value={view} onChange={(e) => setView(e.target.value as typeof view)} className="rounded border border-line bg-white px-2 py-0.5">
+                  <option value="top">верх списку</option>
+                  <option value="caught">лише покараних пізніше (усі {num(data.totalCaught)})</option>
+                </select>
+              </label>
+              {view === "top" && (
+                <label className="flex items-center gap-2">
+                  рядків
+                  <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded border border-line bg-white px-2 py-0.5">
+                    {[50, 100, 200, 500].map((v) => <option key={v} value={v}>{v}</option>)}
+                  </select>
+                </label>
+              )}
+              <label className="flex items-center gap-2">
+                рік рішення
+                <select value={yearFilter} onChange={(e) => setYearFilter(e.target.value)} className="rounded border border-line bg-white px-2 py-0.5">
+                  <option value="all">будь-який</option>
+                  {decisionYears.map((y) => <option key={y} value={String(y)}>{y}</option>)}
+                  <option value="none">без рішення</option>
+                </select>
+              </label>
+              <span className="text-muted">показано {num(rows.length)}</span>
+            </div>
+
+            <div className="max-h-[640px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-surface text-left text-xs uppercase text-muted">
+                  <tr>
+                    <th className="py-2 pr-2">Місце на 31.12.{year}</th>
+                    <th className="py-2 pr-2">Компанія</th>
+                    <th className="py-2 pr-2">Тендерів</th>
+                    <th className="py-2 pr-2">Коли покарали</th>
+                    <th className="py-2">Через скільки</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((t) => {
+                    const dy = t.firstDecision ? new Date(t.firstDecision).getFullYear() : null;
+                    const months = t.firstDecision ? Math.max(0, Math.round((new Date(t.firstDecision).getTime() - new Date(`${year}-12-31`).getTime()) / (30.44 * 24 * 3600 * 1000))) : null;
+                    return (
                       <tr key={t.edrpou} className={`border-t border-line ${t.outcome === "caught" ? "bg-red-50/70" : ""}`}>
-                        <td className="py-2 pr-2 font-mono text-xs">{t.rankUsed}</td>
+                        <td className="py-2 pr-2 font-mono text-xs">
+                          {t.rankUsed}
+                          <span className="text-muted"> / {num(data.population)}</span>
+                        </td>
                         <td className="py-2 pr-2">
                           <Link href={`/risk/company/${t.edrpou}`} className="font-semibold text-ink hover:text-accent">{t.name || t.edrpou}</Link>
                           <div className="font-mono text-xs text-muted">{t.edrpou}</div>
                         </td>
                         <td className="py-2 pr-2 font-mono">{num(t.nTenders)}</td>
-                        <td className="py-2 text-xs">
-                          {t.outcome === "caught"
-                            ? <span className="font-semibold text-red-700">✔ АМКУ покарав {t.firstDecision ? date(t.firstDecision) : ""}</span>
-                            : <span className="text-muted">рішення поки немає</span>}
+                        <td className="py-2 pr-2 text-xs">
+                          {t.outcome === "caught" && dy ? (
+                            <span className={`rounded-full px-2 py-0.5 font-bold text-white ${yearCls(dy)}`}>{dy}</span>
+                          ) : <span className="text-muted">рішення поки немає</span>}
+                          {t.outcome === "caught" && t.firstDecision && <span className="ml-2 text-muted">{date(t.firstDecision)}</span>}
                         </td>
+                        <td className="py-2 text-xs text-muted">{months === null ? "—" : months < 1 ? "того ж місяця" : months < 12 ? `${months} міс.` : `${Math.floor(months / 12)} р. ${months % 12} міс.`}</td>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            <section className="rounded-2xl border border-line bg-surface p-5">
-              <h2 className="text-base font-bold text-ink">Кого АМКУ покарав після {year} року</h2>
-              <p className="mb-3 text-sm text-muted">
-                Усього {num(data.totalCaught)} компаній. Де кожна з них стояла в списку моделі: {num(inTop100)} були в топ-100,{" "}
-                {num(inTop10pct)} у верхніх 10 %. Смужка — наскільки високо: повна смужка = сама верхівка.
-              </p>
-              <div className="max-h-[560px] overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="sticky top-0 bg-surface text-left text-xs uppercase text-muted">
-                    <tr><th className="py-2 pr-2">Місце у списку</th><th className="py-2 pr-2">Наскільки високо</th><th className="py-2 pr-2">Компанія</th><th className="py-2">Дата рішення</th></tr>
-                  </thead>
-                  <tbody>
-                    {(showAllCaught ? caughtSorted : caughtSorted.slice(0, 200)).map((c) => (
-                      <tr key={c.edrpou} className="border-t border-line">
-                        <td className="py-2 pr-2 font-mono text-xs">{c.rankUsed} з {num(data.population)}</td>
-                        <td className="py-2 pr-2">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-16 rounded bg-line"><div className="h-2 rounded bg-red-600" style={{ width: `${Math.max(2, c.percentile ?? 0)}%` }} /></div>
-                            <span className="text-xs text-muted">{c.percentile === null || c.percentile === undefined ? "—" : `вище за ${Math.round(c.percentile)} % компаній`}</span>
-                          </div>
-                        </td>
-                        <td className="py-2 pr-2">
-                          <Link href={`/risk/company/${c.edrpou}`} className="font-semibold text-ink hover:text-accent">{c.name || c.edrpou}</Link>
-                          <div className="font-mono text-xs text-muted">{c.edrpou}</div>
-                        </td>
-                        <td className="py-2 text-xs">{c.firstDecision ? date(c.firstDecision) : "—"}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!showAllCaught && caughtSorted.length > 200 && (
-                  <button onClick={() => setShowAllCaught(true)} className="mt-3 text-sm font-semibold text-accent">показати всі {num(caughtSorted.length)}</button>
-                )}
-              </div>
-            </section>
-          </div>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </section>
 
           <section className="rounded-2xl border border-line bg-white p-5 text-sm text-muted">
             <p className="font-semibold text-ink">Як читати ці числа чесно</p>
