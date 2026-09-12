@@ -352,3 +352,41 @@ export type ReliabilityReport = {
   }[];
   live?: { database: "ok" | "down"; cache: "ok" | "unavailable" };
 };
+
+// --- retrospective backtest ---
+export type BacktestCurvePoint = { k: number; precision: number; recall: number; lift: number };
+
+export type BacktestMetrics = {
+  population: number;
+  totalCaught: number;
+  baseRate: number;
+  curve: BacktestCurvePoint[];
+  recallTop10Pct: number;
+};
+
+export type BacktestCompany = {
+  edrpou: string;
+  name: string | null;
+  score: number;
+  rank: number;
+  rankFull: number | null;
+  rankUsed: number;
+  group: string;
+  coverage: string;
+  nTenders: number;
+  degree: number;
+  firstDecision: string | null;
+  outcome: "known" | "caught" | "none";
+  percentile?: number | null;
+};
+
+export type BacktestList = {
+  items: (BacktestMetrics & { cutoffYear: number; modelVersion: string; companies: number })[];
+};
+
+export type Backtest = BacktestMetrics & {
+  cutoffYear: number;
+  fullCoverageOnly: boolean;
+  top: BacktestCompany[];
+  caughtLater: BacktestCompany[];
+};

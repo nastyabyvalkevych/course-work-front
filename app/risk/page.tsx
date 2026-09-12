@@ -135,7 +135,7 @@ function RiskHomeInner() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-xl font-bold uppercase tracking-wide text-ink">
-            Рейтинг ризику{region ? <span className="ml-2 text-base font-semibold normal-case text-muted">· {region} <Link href="/risk" className="text-accent">скинути</Link> · <Link href="/risk/map" className="text-accent">мапа</Link></span> : <Link href="/risk/map" className="ml-3 text-sm font-semibold normal-case text-accent">на мапі →</Link>}
+            Рейтинг ризику{region ? <span className="ml-2 text-base font-semibold normal-case text-muted">· {region} <Link href="/risk" className="text-accent">скинути</Link> · <Link href="/risk/map" className="text-accent">мапа</Link></span> : <span className="ml-3 text-sm font-semibold normal-case"><Link href="/risk/map" className="text-accent">на мапі →</Link> · <Link href="/risk/backtest" className="text-accent">ретроспектива →</Link></span>}
           </h2>
           <div className="flex flex-wrap items-center gap-4 text-sm text-ink">
             <label className="flex items-center gap-2">
