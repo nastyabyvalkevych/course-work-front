@@ -4,24 +4,49 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
-import { date, num, pct } from "@/lib/risk";
+import { date, num } from "@/lib/risk";
 import { Backtest, BacktestList } from "@/lib/types";
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+const pct0 = (v: number) => `${Math.round(v * 100)} %`;
+
+function Step({ n, title, text }: { n: number; title: string; text: string }) {
   return (
-    <div className="rounded-2xl border border-line bg-surface p-5">
-      <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-3 text-3xl font-extrabold leading-none tracking-tight text-ink">{value}</p>
-      {sub && <p className="mt-2 text-xs text-muted">{sub}</p>}
+    <div className="flex gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-ink text-sm font-bold text-canvas">{n}</div>
+      <div>
+        <p className="font-semibold text-ink">{title}</p>
+        <p className="text-sm text-muted">{text}</p>
+      </div>
     </div>
   );
 }
 
-function Outcome({ o, firstDecision }: { o: string; firstDecision: string | null }) {
-  if (o === "caught")
-    return <span className="rounded-full border border-red-200 bg-red-100 px-2 py-0.5 text-xs font-semibold text-red-800">покарана {firstDecision ? date(firstDecision) : ""}</span>;
-  if (o === "known") return <span className="rounded-full border border-line bg-surface px-2 py-0.5 text-xs text-muted">вже в реєстрі</span>;
-  return <span className="rounded-full border border-line bg-white px-2 py-0.5 text-xs text-muted">без рішення</span>;
+function Timeline({ year }: { year: number }) {
+  return (
+    <div className="rounded-2xl border border-line bg-surface p-4">
+      <div className="flex items-stretch overflow-hidden rounded-xl text-xs font-semibold">
+        <div className="flex-1 bg-slate-200 px-3 py-2 text-slate-800">
+          Модель бачить: тендери і рішення АМКУ до 31.12.{year}
+        </div>
+        <div className="w-1 bg-ink" />
+        <div className="flex-1 bg-red-100 px-3 py-2 text-red-900">
+          Модель не бачить: рішення АМКУ {year + 1}–2026. Ними перевіряємо
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** 10×10 dots: the top-100 list, red = later sanctioned, grey = no decision yet. */
+function HitGrid({ outcomes }: { outcomes: string[] }) {
+  return (
+    <div className="grid grid-cols-10 gap-1.5" style={{ maxWidth: 260 }}>
+      {outcomes.slice(0, 100).map((o, i) => (
+        <div key={i} title={`місце ${i + 1}: ${o === "caught" ? "покарана пізніше" : "без рішення"}`}
+             className={`aspect-square rounded-sm ${o === "caught" ? "bg-red-600" : "bg-slate-200"}`} />
+      ))}
+    </div>
+  );
 }
 
 function PrecisionChart({ curve, baseRate }: { curve: Backtest["curve"]; baseRate: number }) {
@@ -39,11 +64,9 @@ function PrecisionChart({ curve, baseRate }: { curve: Backtest["curve"]; baseRat
           <text x={pad.l - 6} y={y(t) + 4} textAnchor="end" fontSize="11" fill="#6b7280">{Math.round(t * 100)} %</text>
         </g>
       ))}
-      {curve.map((c) => (
-        <text key={c.k} x={x(c.k)} y={h - 8} textAnchor="middle" fontSize="11" fill="#6b7280">{c.k}</text>
-      ))}
+      {curve.map((c) => <text key={c.k} x={x(c.k)} y={h - 8} textAnchor="middle" fontSize="11" fill="#6b7280">{c.k}</text>)}
       <line x1={pad.l} x2={w - pad.r} y1={y(baseRate)} y2={y(baseRate)} stroke="#6b7280" strokeDasharray="4 4" />
-      <text x={w - pad.r} y={y(baseRate) - 4} textAnchor="end" fontSize="11" fill="#6b7280">випадковий відбір {Math.round(baseRate * 100)} %</text>
+      <text x={w - pad.r} y={y(baseRate) - 4} textAnchor="end" fontSize="11" fill="#6b7280">якби обирали навмання: {pct0(baseRate)}</text>
       <path d={d} fill="none" stroke="#dc2626" strokeWidth="2.5" />
       {curve.map((c) => <circle key={c.k} cx={x(c.k)} cy={y(c.precision)} r="3.5" fill="#dc2626" />)}
     </svg>
@@ -57,6 +80,7 @@ export default function BacktestPage() {
   const [limit, setLimit] = useState(100);
   const [data, setData] = useState<Backtest | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAllCaught, setShowAllCaught] = useState(false);
 
   useEffect(() => {
     fetchJson<BacktestList>("/api/risk/backtest")
@@ -71,44 +95,46 @@ export default function BacktestPage() {
     if (!year) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
-    fetchJson<Backtest>(`/api/risk/backtest/${year}?limit=${limit}&fullCoverageOnly=${fullOnly ? 1 : 0}`)
+    fetchJson<Backtest>(`/api/risk/backtest/${year}?limit=${Math.max(limit, 100)}&fullCoverageOnly=${fullOnly ? 1 : 0}`)
       .then(setData)
       .catch((e) => setError(String(e)));
   }, [year, limit, fullOnly]);
 
   const p100 = useMemo(() => data?.curve.find((c) => c.k === 100), [data]);
+  const hits100 = useMemo(() => (data ? data.top.slice(0, 100).filter((t) => t.outcome === "caught").length : 0), [data]);
   const caughtSorted = useMemo(() => (data ? [...data.caughtLater].sort((a, b) => a.rankUsed - b.rankUsed) : []), [data]);
+  const inTop100 = caughtSorted.filter((c) => c.rankUsed <= 100).length;
+  const inTop10pct = data ? Math.round(data.recallTop10Pct * data.totalCaught) : 0;
 
   return (
     <div className="space-y-8">
       <Link href="/risk" className="text-sm text-muted hover:text-ink">← До рейтингу</Link>
       <header className="space-y-2">
-        <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Ретроспективна перевірка</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Що система сказала б наприкінці року, і кого АМКУ покарав потім</h1>
-        <p className="max-w-3xl text-sm text-muted">
-          Модель навчена лише на тендерах до 31 грудня обраного року і на рішеннях АМКУ, відомих на той момент.
-          Потім дивимось у сьогоднішній реєстр: чи справді компанії з верхівки її списку отримали рішення в наступні роки.
-          Компанії, які вже були в реєстрі на дату зрізу, зі списку прибрано.
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Перевірка на минулому</p>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Чи вгадує модель, кого АМКУ покарає далі?</h1>
+        <p className="max-w-3xl text-base text-muted">
+          Ми «відмотуємо час назад»: даємо моделі лише те, що було відомо на кінець обраного року, просимо скласти
+          список підозрілих компаній, а потім звіряємо його з рішеннями АМКУ, які вийшли пізніше.
         </p>
       </header>
+
+      <section className="grid gap-5 rounded-2xl border border-line bg-surface p-5 md:grid-cols-3">
+        <Step n={1} title="Відмотали час" text="Беремо тендери до 31 грудня обраного року і компанії, яких АМКУ вже покарав на той момент. Усе пізніше приховано." />
+        <Step n={2} title="Модель склала список" text="Вона навчилась на відомих покараних і поставила кожній компанії без рішення число ризику. Сортуємо від найбільшого." />
+        <Step n={3} title="Звірили з життям" text="Дивимось у сьогоднішній реєстр: скільком компаніям з верхівки списку АМКУ справді виніс рішення пізніше." />
+      </section>
 
       {list && (
         <div className="flex flex-wrap items-center gap-4 text-sm">
           <label className="flex items-center gap-2">
-            Зріз
+            Кінець року
             <select value={year ?? ""} onChange={(e) => setYear(Number(e.target.value))} className="rounded-lg border border-line bg-white px-2 py-1">
-              {list.items.map((i) => <option key={i.cutoffYear} value={i.cutoffYear}>31.12.{i.cutoffYear}</option>)}
-            </select>
-          </label>
-          <label className="flex items-center gap-2">
-            показати топ
-            <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded-lg border border-line bg-white px-2 py-1">
-              {[50, 100, 200, 500].map((v) => <option key={v} value={v}>{v}</option>)}
+              {list.items.map((i) => <option key={i.cutoffYear} value={i.cutoffYear}>{i.cutoffYear}</option>)}
             </select>
           </label>
           <label className="flex items-center gap-2">
             <input type="checkbox" checked={fullOnly} onChange={(e) => setFullOnly(e.target.checked)} />
-            лише компанії з повною історією (чесне порівняння)
+            чесне порівняння (лише компанії з повною історією)
           </label>
         </div>
       )}
@@ -120,28 +146,50 @@ export default function BacktestPage() {
       )}
       {error && <p className="text-sm text-red-700">{error}</p>}
 
-      {data && (
+      {data && year && (
         <>
-          <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <Stat label="Компаній без рішення на дату зрізу" value={num(data.population)} sub={`з них покарано пізніше: ${num(data.totalCaught)}`} />
-            <Stat label="Випадковий відбір" value={pct(data.baseRate, 1)} sub="частка покараних пізніше серед усіх" />
-            <Stat label="Точність у топ-100" value={p100 ? pct(p100.precision, 0) : "—"} sub={p100 ? `у ${p100.lift.toFixed(1)} раза краще за випадковий` : undefined} />
-            <Stat label="Спіймано в топ-10 %" value={pct(data.recallTop10Pct, 0)} sub="частка покараних пізніше, яких модель поставила у верхні 10 %" />
+          <Timeline year={year} />
+
+          <section className="rounded-2xl border-2 border-ink bg-white p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">Головний результат</p>
+            <p className="mt-2 text-2xl font-extrabold leading-snug text-ink">
+              Зі 100 компаній, які модель поставила на верх списку наприкінці {year} року,{" "}
+              <span className="text-red-700">{hits100} отримали рішення АМКУ</span> у {year + 1}–2026 роках.
+            </p>
+            <p className="mt-2 text-base text-muted">
+              Якби ті ж 100 компаній обирали навмання з того самого списку, покараних було б близько{" "}
+              <b>{Math.round(data.baseRate * 100)}</b>. Отже список моделі у{" "}
+              <b>{p100 ? p100.lift.toFixed(1) : "—"} раза</b> точніший за випадковий вибір.
+            </p>
+            <div className="mt-5 flex flex-wrap items-start gap-8">
+              <div>
+                <HitGrid outcomes={data.top.map((t) => t.outcome)} />
+                <p className="mt-2 text-xs text-muted">Кожен квадрат — одна компанія з топ-100. <span className="font-semibold text-red-700">Червона</span> — покарана пізніше.</p>
+              </div>
+              <dl className="grid gap-3 text-sm">
+                <div><dt className="text-muted">Компаній без рішення на кінець {year}</dt><dd className="text-xl font-bold text-ink">{num(data.population)}</dd></div>
+                <div><dt className="text-muted">З них АМКУ покарав пізніше</dt><dd className="text-xl font-bold text-ink">{num(data.totalCaught)} <span className="text-sm font-normal text-muted">({pct0(data.baseRate)})</span></dd></div>
+                <div><dt className="text-muted">Скільки з покараних пізніше стояли у верхніх 10 % списку</dt><dd className="text-xl font-bold text-ink">{num(inTop10pct)} <span className="text-sm font-normal text-muted">({pct0(data.recallTop10Pct)})</span></dd></div>
+              </dl>
+            </div>
           </section>
 
           <section className="rounded-2xl border border-line bg-surface p-5">
-            <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-muted">Точність за розміром списку перевірок</h2>
-            <p className="mb-3 text-xs text-muted">Якби аудитор перевірив перших k компаній зі списку моделі, яка частка з них отримала рішення АМКУ в наступні роки.</p>
+            <h2 className="text-base font-bold text-ink">Що буде, якщо перевіряти більше компаній</h2>
+            <p className="mb-3 text-sm text-muted">
+              Аудитор має час на k перевірок. Лінія показує, яка частка з перших k компаній списку виявилась покараною.
+              Чим далі вниз списком, тим менше влучань, але все одно вище за пунктир випадкового вибору.
+            </p>
             <PrecisionChart curve={data.curve} baseRate={data.baseRate} />
             <div className="mt-3 overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead className="text-left uppercase text-muted">
-                  <tr><th className="py-1 pr-3">k</th>{data.curve.map((c) => <th key={c.k} className="py-1 pr-3 font-mono">{c.k}</th>)}</tr>
+              <table className="w-full text-sm">
+                <thead className="text-left text-xs uppercase text-muted">
+                  <tr><th className="py-1 pr-3">Перевірили компаній</th>{data.curve.map((c) => <th key={c.k} className="py-1 pr-3 font-mono">{c.k}</th>)}</tr>
                 </thead>
                 <tbody>
-                  <tr className="border-t border-line"><td className="py-1 pr-3">точність</td>{data.curve.map((c) => <td key={c.k} className="py-1 pr-3 font-mono">{pct(c.precision, 0)}</td>)}</tr>
-                  <tr className="border-t border-line"><td className="py-1 pr-3">повнота</td>{data.curve.map((c) => <td key={c.k} className="py-1 pr-3 font-mono">{pct(c.recall, 0)}</td>)}</tr>
-                  <tr className="border-t border-line"><td className="py-1 pr-3">приріст</td>{data.curve.map((c) => <td key={c.k} className="py-1 pr-3 font-mono">×{c.lift.toFixed(1)}</td>)}</tr>
+                  <tr className="border-t border-line"><td className="py-1 pr-3">з них покарано пізніше</td>{data.curve.map((c) => <td key={c.k} className="py-1 pr-3 font-mono">{pct0(c.precision)}</td>)}</tr>
+                  <tr className="border-t border-line"><td className="py-1 pr-3">яку частку всіх майбутніх покараних знайшли</td>{data.curve.map((c) => <td key={c.k} className="py-1 pr-3 font-mono">{pct0(c.recall)}</td>)}</tr>
+                  <tr className="border-t border-line"><td className="py-1 pr-3">у скільки разів краще за навмання</td>{data.curve.map((c) => <td key={c.k} className="py-1 pr-3 font-mono">×{c.lift.toFixed(1)}</td>)}</tr>
                 </tbody>
               </table>
             </div>
@@ -149,23 +197,33 @@ export default function BacktestPage() {
 
           <div className="grid gap-6 lg:grid-cols-2">
             <section className="rounded-2xl border border-line bg-surface p-5">
-              <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Прогноз: верхівка списку на 31.12.{data.cutoffYear}</h2>
+              <h2 className="text-base font-bold text-ink">Список моделі на 31.12.{year}</h2>
+              <p className="mb-3 text-sm text-muted">Хто стояв на верху, і що з ним сталося потім.</p>
+              <div className="mb-2 flex items-center gap-2 text-xs">
+                показати
+                <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded border border-line bg-white px-2 py-0.5">
+                  {[50, 100, 200, 500].map((v) => <option key={v} value={v}>{v}</option>)}
+                </select>
+              </div>
               <div className="max-h-[560px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-surface text-left text-xs uppercase text-muted">
-                    <tr><th className="py-2 pr-2">#</th><th className="py-2 pr-2">Компанія</th><th className="py-2 pr-2">Ризик</th><th className="py-2 pr-2">Тендерів</th><th className="py-2">Дійсність</th></tr>
+                    <tr><th className="py-2 pr-2">Місце</th><th className="py-2 pr-2">Компанія</th><th className="py-2 pr-2">Тендерів</th><th className="py-2">Що сталося</th></tr>
                   </thead>
                   <tbody>
-                    {data.top.map((t) => (
-                      <tr key={t.edrpou} className={`border-t border-line ${t.outcome === "caught" ? "bg-red-50/60" : ""}`}>
+                    {data.top.slice(0, limit).map((t) => (
+                      <tr key={t.edrpou} className={`border-t border-line ${t.outcome === "caught" ? "bg-red-50/70" : ""}`}>
                         <td className="py-2 pr-2 font-mono text-xs">{t.rankUsed}</td>
                         <td className="py-2 pr-2">
                           <Link href={`/risk/company/${t.edrpou}`} className="font-semibold text-ink hover:text-accent">{t.name || t.edrpou}</Link>
                           <div className="font-mono text-xs text-muted">{t.edrpou}</div>
                         </td>
-                        <td className="py-2 pr-2 font-mono">{t.score.toFixed(3)}</td>
                         <td className="py-2 pr-2 font-mono">{num(t.nTenders)}</td>
-                        <td className="py-2"><Outcome o={t.outcome} firstDecision={t.firstDecision} /></td>
+                        <td className="py-2 text-xs">
+                          {t.outcome === "caught"
+                            ? <span className="font-semibold text-red-700">✔ АМКУ покарав {t.firstDecision ? date(t.firstDecision) : ""}</span>
+                            : <span className="text-muted">рішення поки немає</span>}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -174,21 +232,24 @@ export default function BacktestPage() {
             </section>
 
             <section className="rounded-2xl border border-line bg-surface p-5">
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-muted">Дійсність: кого АМКУ покарав після зрізу</h2>
-              <p className="mb-3 text-xs text-muted">Де ці компанії стояли в списку моделі на дату зрізу. Перцентиль 99 означає «у верхньому 1 %».</p>
+              <h2 className="text-base font-bold text-ink">Кого АМКУ покарав після {year} року</h2>
+              <p className="mb-3 text-sm text-muted">
+                Усього {num(data.totalCaught)} компаній. Де кожна з них стояла в списку моделі: {num(inTop100)} були в топ-100,{" "}
+                {num(inTop10pct)} у верхніх 10 %. Смужка — наскільки високо: повна смужка = сама верхівка.
+              </p>
               <div className="max-h-[560px] overflow-y-auto">
                 <table className="w-full text-sm">
                   <thead className="sticky top-0 bg-surface text-left text-xs uppercase text-muted">
-                    <tr><th className="py-2 pr-2">Місце</th><th className="py-2 pr-2">Перцентиль</th><th className="py-2 pr-2">Компанія</th><th className="py-2">Рішення</th></tr>
+                    <tr><th className="py-2 pr-2">Місце у списку</th><th className="py-2 pr-2">Наскільки високо</th><th className="py-2 pr-2">Компанія</th><th className="py-2">Дата рішення</th></tr>
                   </thead>
                   <tbody>
-                    {caughtSorted.map((c) => (
+                    {(showAllCaught ? caughtSorted : caughtSorted.slice(0, 200)).map((c) => (
                       <tr key={c.edrpou} className="border-t border-line">
-                        <td className="py-2 pr-2 font-mono text-xs">{c.rankUsed}</td>
+                        <td className="py-2 pr-2 font-mono text-xs">{c.rankUsed} з {num(data.population)}</td>
                         <td className="py-2 pr-2">
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-16 rounded bg-line"><div className="h-2 rounded bg-red-600" style={{ width: `${Math.max(2, c.percentile ?? 0)}%` }} /></div>
-                            <span className="font-mono text-xs">{c.percentile === null || c.percentile === undefined ? "—" : c.percentile.toFixed(1)}</span>
+                            <span className="text-xs text-muted">{c.percentile === null || c.percentile === undefined ? "—" : `вище за ${Math.round(c.percentile)} % компаній`}</span>
                           </div>
                         </td>
                         <td className="py-2 pr-2">
@@ -200,9 +261,21 @@ export default function BacktestPage() {
                     ))}
                   </tbody>
                 </table>
+                {!showAllCaught && caughtSorted.length > 200 && (
+                  <button onClick={() => setShowAllCaught(true)} className="mt-3 text-sm font-semibold text-accent">показати всі {num(caughtSorted.length)}</button>
+                )}
               </div>
             </section>
           </div>
+
+          <section className="rounded-2xl border border-line bg-white p-5 text-sm text-muted">
+            <p className="font-semibold text-ink">Як читати ці числа чесно</p>
+            <ul className="mt-2 list-disc space-y-1 pl-5">
+              <li>Список порівнює покараних згодом з компаніями без рішення, які мають таку ж повну історію торгів. Тому «навмання» тут дає {pct0(data.baseRate)}, а не частку змовників на всьому ринку.</li>
+              <li>«Рішення поки немає» не означає «чесна». АМКУ перевіряє малу частку ринку, частина цих компаній може бути покарана в майбутньому.</li>
+              <li>Модель добре відбирає верхівку списку, але більшість майбутніх покараних стоїть у середині. Це інструмент пріоритезації перевірок, не доказ.</li>
+            </ul>
+          </section>
         </>
       )}
     </div>
