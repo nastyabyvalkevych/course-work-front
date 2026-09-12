@@ -39,8 +39,8 @@ export const REGION_NAMES: Record<string, string> = {
 export type MapMetric = "highRiskShare" | "meanScore" | "sanctionedShare" | "sanctioned" | "companies";
 
 export const METRICS: Record<MapMetric, { label: string; format: (v: number) => string; hint: string }> = {
-  highRiskShare: { label: "Частка компаній з високим ризиком", format: (v) => `${(v * 100).toFixed(1)} %`, hint: "індекс ризику ≥ 70 % серед компаній регіону" },
-  meanScore: { label: "Середній індекс ризику", format: (v) => `${(v * 100).toFixed(1)} %`, hint: "середнє каліброваної ймовірності по компаніях" },
+  highRiskShare: { label: "Частка компаній з високим ризиком", format: (v) => `${(v * 100).toFixed(1)} %`, hint: "компанії, чия історія дуже схожа на покараних (оцінка від 70 %)" },
+  meanScore: { label: "Середня схожість з покараними", format: (v) => `${(v * 100).toFixed(1)} %`, hint: "середня оцінка по компаніях області" },
   sanctionedShare: { label: "Частка компаній у реєстрі АМКУ", format: (v) => `${(v * 100).toFixed(1)} %`, hint: "вже покарані за змову" },
   sanctioned: { label: "Компаній у реєстрі АМКУ", format: (v) => String(v), hint: "абсолютна кількість" },
   companies: { label: "Компаній-учасників", format: (v) => String(v), hint: "з мінімальною кількістю тендерів" },

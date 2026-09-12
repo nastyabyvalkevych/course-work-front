@@ -26,11 +26,11 @@ function Timeline({ year }: { year: number }) {
     <div className="rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-stretch overflow-hidden rounded-xl text-xs font-semibold">
         <div className="flex-1 bg-slate-200 px-3 py-2 text-slate-800">
-          Модель бачить: тендери і рішення АМКУ до 31.12.{year}
+          Сервіс бачить: тендери і рішення АМКУ до 31.12.{year}
         </div>
         <div className="w-1 bg-ink" />
         <div className="flex-1 bg-red-100 px-3 py-2 text-red-900">
-          Модель не бачить: рішення АМКУ {year + 1}–2026. Ними перевіряємо
+          Сервіс не бачить: рішення АМКУ {year + 1}–2026. Ними перевіряємо
         </div>
       </div>
     </div>
@@ -137,16 +137,16 @@ export default function BacktestPage() {
       <Link href="/risk" className="text-sm text-muted hover:text-ink">← До рейтингу</Link>
       <header className="space-y-2">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Перевірка на минулому</p>
-        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Чи вгадує модель, кого АМКУ покарає далі?</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-ink">Чи вгадує сервіс, кого АМКУ покарає далі?</h1>
         <p className="max-w-3xl text-base text-muted">
-          Ми «відмотуємо час назад»: даємо моделі лише те, що було відомо на кінець обраного року, просимо скласти
+          Ми «відмотуємо час назад»: даємо сервісу лише те, що було відомо на кінець обраного року, просимо скласти
           список підозрілих компаній, а потім звіряємо його з рішеннями АМКУ, які вийшли пізніше.
         </p>
       </header>
 
       <section className="grid gap-5 rounded-2xl border border-line bg-surface p-5 md:grid-cols-3">
         <Step n={1} title="Відмотали час" text="Беремо тендери до 31 грудня обраного року і компанії, яких АМКУ вже покарав на той момент. Усе пізніше приховано." />
-        <Step n={2} title="Модель склала список" text="Вона навчилась на відомих покараних і поставила кожній компанії без рішення число ризику. Сортуємо від найбільшого." />
+        <Step n={2} title="Сервіс склав список" text="Він порівняв кожну компанію без рішення з уже покараними і поставив їй оцінку схожості. Сортуємо від найбільшої." />
         <Step n={3} title="Звірили з життям" text="Дивимось у сьогоднішній реєстр: скільком компаніям з верхівки списку АМКУ справді виніс рішення пізніше." />
       </section>
 
@@ -179,12 +179,12 @@ export default function BacktestPage() {
           <section className="rounded-2xl border-2 border-ink bg-white p-6">
             <p className="text-xs font-bold uppercase tracking-wider text-muted">Головний результат</p>
             <p className="mt-2 text-2xl font-extrabold leading-snug text-ink">
-              Зі 100 компаній, які модель поставила на верх списку наприкінці {year} року,{" "}
+              Зі 100 компаній, які сервіс поставив на верх списку наприкінці {year} року,{" "}
               <span className="text-red-700">{hits100} отримали рішення АМКУ</span> у {year + 1}–2026 роках.
             </p>
             <p className="mt-2 text-base text-muted">
               Якби ті ж 100 компаній обирали навмання з того самого списку, покараних було б близько{" "}
-              <b>{Math.round(data.baseRate * 100)}</b>. Отже список моделі у{" "}
+              <b>{Math.round(data.baseRate * 100)}</b>. Отже список сервісу у{" "}
               <b>{p100 ? p100.lift.toFixed(1) : "—"} раза</b> точніший за випадковий вибір.
             </p>
             <div className="mt-5 flex flex-wrap items-start gap-8">
@@ -222,9 +222,9 @@ export default function BacktestPage() {
           </section>
 
           <section className="rounded-2xl border border-line bg-surface p-5">
-            <h2 className="text-base font-bold text-ink">Список моделі на 31.12.{year} і що сталося з кожною компанією</h2>
+            <h2 className="text-base font-bold text-ink">Список підозрілих на 31.12.{year} і що сталося з кожною компанією</h2>
             <p className="mb-3 text-sm text-muted">
-              Модель склала цей список наприкінці {year} року. Стовпець «Коли покарали» показує, через скільки часу АМКУ виніс рішення:
+              Сервіс склав цей список наприкінці {year} року. Стовпець «Коли покарали» показує, через скільки часу АМКУ виніс рішення:
               часто це не наступний рік, а через два-три.
             </p>
 
@@ -313,7 +313,7 @@ export default function BacktestPage() {
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>Список порівнює покараних згодом з компаніями без рішення, які мають таку ж повну історію торгів. Тому «навмання» тут дає {pct0(data.baseRate)}, а не частку змовників на всьому ринку.</li>
               <li>«Рішення поки немає» не означає «чесна». АМКУ перевіряє малу частку ринку, частина цих компаній може бути покарана в майбутньому.</li>
-              <li>Модель добре відбирає верхівку списку, але більшість майбутніх покараних стоїть у середині. Це інструмент пріоритезації перевірок, не доказ.</li>
+              <li>Сервіс добре відбирає верхівку списку, але більшість майбутніх покараних стоїть у середині. Це підказка, кого перевіряти першим, не доказ.</li>
             </ul>
           </section>
         </>

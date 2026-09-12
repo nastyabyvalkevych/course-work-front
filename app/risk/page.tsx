@@ -77,7 +77,7 @@ function RiskHomeInner() {
           Кого перевіряти першим
         </h1>
         <p className="max-w-3xl text-base text-muted">
-          Модель на графі співучасті оцінює, наскільки історія компанії схожа на поведінку фірм,
+          Сервіс оцінює, наскільки історія торгів компанії схожа на поведінку фірм,
           яких Антимонопольний комітет уже покарав за спотворення результатів торгів. Це
           інструмент пріоритезації перевірок, а не доказ порушення.
         </p>
@@ -85,7 +85,7 @@ function RiskHomeInner() {
 
       {summary && (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Stat label="Компаній оцінено" value={num(summary.companiesScored)} sub={`модель ${summary.modelVersion}`} />
+          <Stat label="Компаній оцінено" value={num(summary.companiesScored)} sub="кожна має оцінку схожості з покараними" />
           <Stat label="У реєстрі АМКУ" value={num(summary.companiesInRegister)} sub="підтверджені рішення" />
           <Stat label="Тендерів у базі" value={num(summary.tendersInDatabase)} sub="Prozorro, 2015–2026" />
           <Stat

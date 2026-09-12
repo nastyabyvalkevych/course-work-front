@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Prozorro Insight",
-  description: "Виявлення ознак змови учасників публічних закупівель України на графі спільних торгів",
+  description: "Хто на торгах грає не сам: ознаки змови в публічних закупівлях України",
 };
 
 export default function RootLayout({

@@ -150,7 +150,7 @@ export default function RiskGraphView({
       className="w-full rounded-2xl border border-line bg-white"
       style={{ height }}
       role="img"
-      aria-label="Граф співучасті компанії"
+      aria-label="Мапа партнерів компанії по торгах"
     />
   );
 }

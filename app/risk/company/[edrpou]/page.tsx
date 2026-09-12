@@ -62,8 +62,7 @@ export default function CompanyRiskPage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Картка компанії</p>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{data.name ?? data.edrpou}</h1>
           <p className="mt-1 text-sm text-muted">
-            ЄДРПОУ {data.edrpou} · історія {data.coverage === "full" ? "повна" : data.coverage === "capped" ? "обрізана стелею порталу" : "часткова"} ·
-            модель {data.modelVersion}
+            ЄДРПОУ {data.edrpou} · історія {data.coverage === "full" ? "повна" : data.coverage === "capped" ? "обрізана стелею порталу" : "часткова"}
           </p>
         </div>
         <div className="rounded-2xl border border-line bg-white p-5 text-right">
@@ -130,8 +129,8 @@ export default function CompanyRiskPage() {
       <div className="grid gap-6 lg:grid-cols-5">
         <Card title="Показники для фахівців" className="lg:col-span-2">
           <p className="mb-3 text-xs text-muted">
-            Які показники компанії тягнуть оцінку вгору (червоне) або вниз (зелене). Графова
-            модель додатково враховує партнерів, показаних у графі праворуч.
+            Які показники компанії тягнуть оцінку вгору (червоне) або вниз (зелене). Окрім них, сервіс
+            враховує партнерів, показаних на мапі праворуч.
           </p>
           <ul className="space-y-2">
             {data.contributions.map((c) => (
