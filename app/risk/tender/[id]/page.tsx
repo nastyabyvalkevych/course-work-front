@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
 import { date, money, num, pct, riskBadgeClass, riskBarColor, riskLabel } from "@/lib/risk";
+import { reasonsTender, verdictTender } from "@/lib/explain";
 import { RiskTender } from "@/lib/types";
 
 export default function TenderRiskPage() {
@@ -52,30 +53,36 @@ export default function TenderRiskPage() {
           <p className="mt-1 text-sm text-ink">Очікувана вартість: {money(t.valueAmount, t.valueCurrency)}</p>
         </div>
         <div className="rounded-2xl border border-line bg-white p-5 text-right">
-          <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">Ризик змови у тендері</p>
+          <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">Ризик домовленості між учасниками</p>
           <p className="mt-2 text-5xl font-extrabold leading-none" style={{ color: riskBarColor(s.tenderRisk) }}>{pct(s.tenderRisk)}</p>
           <p className="mt-2 text-xs text-muted">
-            {s.biddersCount} учасн. · {s.knownParticipants} у реєстрі АМКУ · {s.repeatedPairs} повторюваних пар
+            {s.biddersCount} учасників · {s.knownParticipants} уже покарані АМКУ · {s.repeatedPairs} пар постійних партнерів
           </p>
         </div>
       </header>
 
-      {s.repeatedPairs > 0 && (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-          <p className="font-semibold">Учасники цього тендера вже зустрічались між собою на торгах.</p>
-          <ul className="mt-2 space-y-1">
-            {data.pairs
-              .filter((p) => p.sharedTenders >= 3)
-              .sort((a, b) => b.sharedTenders - a.sharedTenders)
-              .map((p) => (
-                <li key={`${p.a}-${p.b}`}>
-                  <b>{names.get(p.a)}</b> і <b>{names.get(p.b)}</b>: {p.sharedTenders} спільних тендерів раніше,
-                  перемоги {p.aWon} проти {p.bWon}.
+      {(() => {
+        const v = verdictTender(data);
+        const reasons = reasonsTender(data);
+        return (
+          <section className="rounded-2xl border-2 border-ink bg-white p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">Простими словами</p>
+            <h2 className="mt-1 text-2xl font-extrabold text-ink">{v.title}</h2>
+            <p className="mt-2 text-base text-muted">{v.text}</p>
+            <ul className="mt-5 grid gap-3 md:grid-cols-2">
+              {reasons.map((r) => (
+                <li key={r.title} className={`rounded-xl border p-4 ${r.kind === "up" ? "border-red-200 bg-red-50" : r.kind === "down" ? "border-green-200 bg-green-50" : "border-line bg-surface"}`}>
+                  <p className="text-xs font-bold uppercase tracking-wider">
+                    {r.kind === "up" ? <span className="text-red-700">▲ підвищує ризик</span> : r.kind === "down" ? <span className="text-green-700">▼ знижує ризик</span> : <span className="text-muted">● варто знати</span>}
+                  </p>
+                  <p className="mt-1 font-semibold text-ink">{r.title}</p>
+                  <p className="mt-1 text-sm text-muted">{r.text}</p>
                 </li>
               ))}
-          </ul>
-        </div>
-      )}
+            </ul>
+          </section>
+        );
+      })()}
 
       <section className="rounded-2xl border border-line bg-surface p-5">
         <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Учасники</h2>
@@ -86,9 +93,9 @@ export default function TenderRiskPage() {
                 <th className="py-2 pr-4">Компанія</th>
                 <th className="py-2 pr-4">Ставка</th>
                 <th className="py-2 pr-4">Результат</th>
-                <th className="py-2 pr-4">Ризик</th>
-                <th className="py-2 pr-4">Історія</th>
-                <th className="py-2">АМКУ</th>
+                <th className="py-2 pr-4">Схожість на покараних</th>
+                <th className="py-2 pr-4">Досвід на торгах</th>
+                <th className="py-2">Реєстр АМКУ</th>
               </tr>
             </thead>
             <tbody>
@@ -108,7 +115,7 @@ export default function TenderRiskPage() {
                   <td className="py-2 pr-4 text-xs text-muted">
                     {p.nTenders === null ? "—" : `${num(p.nTenders)} тендерів, перемог ${pct(p.winRate)}`}
                   </td>
-                  <td className="py-2 text-xs text-red-700">{p.label ? "у реєстрі" : ""}</td>
+                  <td className="py-2 text-xs text-red-700">{p.label ? "уже покарана" : ""}</td>
                 </tr>
               ))}
             </tbody>
@@ -117,8 +124,8 @@ export default function TenderRiskPage() {
       </section>
 
       <p className="text-xs text-muted">
-        Ризик тендера поєднує найвищий індекс серед учасників і наявність пар, які раніше зустрічались на
-        трьох і більше торгах. Це підстава для додаткової перевірки, а не висновок про порушення.
+        Ризик тендера складається з двох речей: наскільки історія найпідозрілішого учасника схожа на покараних, і чи
+        зустрічались учасники між собою раніше на трьох і більше торгах. Це підстава придивитись, а не висновок про порушення.
       </p>
     </div>
   );
