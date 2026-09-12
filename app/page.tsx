@@ -334,8 +334,10 @@ export default function Home() {
           <div className="flex items-center gap-6">
             <Link href="/about" className="hover:text-ink transition">Про проєкт</Link>
             <Link href="/search" className="hover:text-ink transition">Пошук</Link>
+            <Link href="/risk" className="hover:text-ink transition">Ризики</Link>
             <Link href="/osint" className="hover:text-ink transition">OSINT</Link>
             <Link href="/stats" className="hover:text-ink transition">Статистика</Link>
+            <Link href="/reliability" className="hover:text-ink transition">Надійність</Link>
           </div>
         </div>
       </footer>

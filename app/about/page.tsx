@@ -1,325 +1,168 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+
+import { fetchJson } from "@/lib/api";
+import { num } from "@/lib/risk";
+import { BacktestList, RiskSummary } from "@/lib/types";
+
+function Step({ n, title, children }: { n: number; title: string; children: React.ReactNode }) {
+  return (
+    <section className="mb-12">
+      <div className="mb-3 flex items-center gap-3">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent font-bold text-white">{n}</div>
+        <h2 className="text-xl font-bold text-ink">{title}</h2>
+      </div>
+      <div className="ml-5 border-l-2 border-line pl-8 pb-2 space-y-4 text-muted leading-relaxed">{children}</div>
+    </section>
+  );
+}
+
+function Tool({ href, title, text, tag }: { href: string; title: string; text: string; tag?: string }) {
+  return (
+    <Link href={href} className="block rounded-2xl border border-line bg-surface p-4 transition hover:border-accent">
+      <div className="flex items-center justify-between gap-2">
+        <p className="font-semibold text-ink">{title}</p>
+        {tag && <span className="rounded-full border border-line bg-white px-2 py-0.5 text-[0.65rem] font-bold uppercase tracking-wider text-muted">{tag}</span>}
+      </div>
+      <p className="mt-1 text-sm text-muted">{text}</p>
+    </Link>
+  );
+}
 
 export default function AboutPage() {
+  const [summary, setSummary] = useState<RiskSummary | null>(null);
+  const [backtests, setBacktests] = useState<BacktestList | null>(null);
+  useEffect(() => {
+    fetchJson<RiskSummary>("/api/risk/summary").then(setSummary).catch(() => null);
+    fetchJson<BacktestList>("/api/risk/backtest").then(setBacktests).catch(() => null);
+  }, []);
+  const last = backtests?.items.at(-1);
+  const p100 = last?.curve.find((c) => c.k === 100);
+
   return (
-    <div className="max-w-3xl mx-auto">
+    <div className="mx-auto max-w-3xl">
       <div className="mb-8">
-        <Link href="/" className="text-sm text-accent hover:underline">
-          ← На головну
-        </Link>
+        <Link href="/" className="text-sm text-accent hover:underline">← На головну</Link>
       </div>
 
-      <h1 className="text-3xl lg:text-4xl font-extrabold text-ink mb-4">
-        Про дослідження
+      <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Магістерська робота, спеціальність 121</p>
+      <h1 className="mt-2 mb-4 text-3xl font-extrabold text-ink lg:text-4xl">
+        Програмне забезпечення виявлення ознак змови учасників публічних закупівель України на основі графових нейронних мереж
       </h1>
-      <p className="text-lg text-muted mb-12">
-        Пояснюємо простими словами, що ми зробили і навіщо
+      <p className="mb-12 text-lg text-muted">Простими словами: що ми зробили, навіщо і що з цього вийшло.</p>
+
+      {summary && (
+        <div className="mb-12 grid gap-3 sm:grid-cols-3">
+          <div className="rounded-2xl border border-line bg-surface p-4"><p className="text-xs uppercase text-muted">Тендерів у базі</p><p className="text-2xl font-extrabold text-ink">{num(summary.tendersInDatabase)}</p></div>
+          <div className="rounded-2xl border border-line bg-surface p-4"><p className="text-xs uppercase text-muted">Компаній оцінено</p><p className="text-2xl font-extrabold text-ink">{num(summary.companiesScored)}</p></div>
+          <div className="rounded-2xl border border-line bg-surface p-4"><p className="text-xs uppercase text-muted">Покараних АМКУ в реєстрі</p><p className="text-2xl font-extrabold text-ink">{num(summary.companiesInRegister)}</p></div>
+        </div>
+      )}
+
+      <Step n={1} title="Проблема: змову видно лише між компаніями, а перевіряють по одній">
+        <p>
+          Змова на торгах — це коли кілька фірм домовляються, хто виграє, а решта «прикриває». Кожна з них окремо виглядає
+          звичайно: якісь перемоги, якісь поразки, нормальні ціни. Підозріле лише те, <strong className="text-ink">як вони пов'язані</strong>:
+          ходять на тендери тільки разом, виграють по черзі, більше ні з ким не конкурують.
+        </p>
+        <p>
+          Сьогодні Антимонопольний комітет (АМКУ) відкриває справу за скаргою або за ручною перевіркою окремого тендера.
+          У Prozorro понад мільйон конкурентних тендерів, перевірити всі руками неможливо, і саме зв'язки між компаніями
+          при ручній перевірці найважче побачити.
+        </p>
+      </Step>
+
+      <Step n={2} title="Ідея: намалювати мапу «хто з ким ходить на торги»">
+        <p>
+          Кожна компанія — точка. Якщо дві компанії подавали ставки в один тендер, між ними лінія. Зустрілись 20 разів —
+          лінія товстіша. Так із {summary ? num(summary.tendersInDatabase) : "1,4 млн"} тендерів виходить мережа з 85 тисяч компаній
+          і 1,2 млн зв'язків. Це називається граф спільних торгів.
+        </p>
+        <p>
+          Для кожної компанії рахуємо 17 показників: як торгує (скільки тендерів, перемог, скільком замовникам), яке місце
+          в мережі (скільки партнерів, чи вони замкнене коло) і як ставить ціни. Це ті самі ознаки, які аудитори OECD
+          перевіряють руками, тільки порахованi для всіх одразу.
+        </p>
+      </Step>
+
+      <Step n={3} title="Навчання: показуємо моделі тих, кого АМКУ вже покарав">
+        <p>
+          АМКУ публікує реєстр рішень про змови зі списком компаній. Це наші «правильні відповіді»: {summary ? num(summary.companiesInRegister) : "2,4 тис."} покараних компаній
+          за 2023–2026 роки. Модель (графова нейронна мережа GraphSAGE) вчиться відрізняти їх від непокараних, дивлячись
+          не лише на саму компанію, а й на її партнерів і партнерів партнерів.
+        </p>
+        <p>
+          Дві чесні складності. Перша: «не покарана» не означає «чесна», АМКУ перевіряє малу частку ринку, тому модель
+          навчена так, щоб не вважати всіх непокараних чесними. Друга: покарані компанії ми збирали з повною історією
+          торгів, а випадкові суперники потрапили в дані частково. Щоб модель не навчилась відрізняти «спосіб збору»
+          замість поведінки, ми зібрали контрольну групу випадкових компаній з такою ж повною історією і порівнюємо лише з ними.
+        </p>
+      </Step>
+
+      <Step n={4} title="Перевірка: чи вгадує модель майбутні рішення АМКУ">
+        <p>
+          Ми не перевіряємо модель на тих же компаніях, на яких вона вчилась. Ми «відмотуємо час»: даємо їй лише дані до кінця
+          року, просимо скласти список підозрілих, а потім дивимось, кого АМКУ покарав у наступні роки.
+        </p>
+        {p100 && last ? (
+          <div className="rounded-xl border border-line bg-surface p-4">
+            <p className="text-ink">
+              Зі 100 компаній на верху списку наприкінці {last.cutoffYear} року <strong>{Math.round(p100.precision * 100)}</strong> отримали рішення
+              АМКУ пізніше. Навмання було б близько {Math.round(last.baseRate * 100)}. Модель у {p100.lift.toFixed(1)} раза точніша за випадковий вибір.
+            </p>
+            <Link href="/risk/backtest" className="mt-2 inline-block text-sm font-semibold text-accent">Подивитись перевірку по роках →</Link>
+          </div>
+        ) : (
+          <p>Результати перевірки по роках — на сторінці <Link href="/risk/backtest" className="text-accent">«Перевірка на минулому»</Link>.</p>
+        )}
+        <p>
+          У наукових метриках: PR-AUC графової моделі 0,60–0,67 проти 0,56–0,58 у моделі без графа при 0,50 у випадкової;
+          різниця статистично значуща (p ≤ 0,001). Це не вау-результат, і так має бути: ми порівнюємо з компаніями, що мають
+          таку ж повну історію і таку ж активність, тобто в найважчих чесних умовах.
+        </p>
+      </Step>
+
+      <Step n={5} title="Що вміє програма">
+        <ul className="list-disc space-y-1 pl-5">
+          <li><Link href="/risk" className="text-accent">Рейтинг ризику</Link>: кого перевіряти першим, з фільтрами за областю, активністю, повнотою історії.</li>
+          <li>Картка компанії: ризик, ознаки, які його підняли, партнери по торгах і хто з них покараний; граф зв'язків.</li>
+          <li>Картка тендера: ризик учасників і їхня спільна історія до підписання договору.</li>
+          <li><Link href="/risk/map" className="text-accent">Мапа України</Link> за ризиком по областях.</li>
+          <li><Link href="/risk/backtest" className="text-accent">Перевірка на минулому</Link>: прогноз на кінець року проти реальних рішень АМКУ.</li>
+          <li>Пояснення через сусідів: яка саме компанія-партнер найбільше піднімає ризик.</li>
+        </ul>
+        <p>
+          Це інструмент пріоритезації перевірок для АМКУ, замовників і журналістів, а не доказ порушення. Високий ризик означає
+          «історія схожа на історії покараних», і нічого більше.
+        </p>
+      </Step>
+
+      <Step n={6} title="Як це зроблено">
+        <p>
+          Дані: PostgreSQL 17, 37 ГБ, повні JSON тендерів і плоска таблиця участей на 4 млн рядків. Конвеєр і моделі: Python
+          (pandas, networkx, PyTorch Geometric, LightGBM). API: NestJS з кешем Redis, який можна вимкнути без втрати
+          працездатності. Інтерфейс: Next.js і d3. Надійність: 58 автоматичних тестів, навантажувальні тести, fault injection
+          і модуль самооцінки надійності на Марківських моделях.
+        </p>
+      </Step>
+
+      <h2 className="mb-4 text-xl font-bold text-ink">Усі інструменти</h2>
+      <div className="mb-12 grid gap-3 sm:grid-cols-2">
+        <Tool href="/risk" title="Рейтинг ризику змови" text="Головний результат роботи: список компаній за ризиком, картки, граф." />
+        <Tool href="/risk/map" title="Мапа України" text="Ризик і частка покараних по областях." />
+        <Tool href="/risk/backtest" title="Перевірка на минулому" text="Прогноз на кінець року проти реальних рішень АМКУ." />
+        <Tool href="/reliability" title="Надійність системи" text="Марківська модель: ймовірність коректної відповіді, MTTF, чутливість модулів, стан бази й кешу наживо." tag="інженерія" />
+        <Tool href="/osint" title="Індикатори OECD" text="Базовий підхід, з якого починали: єдиний учасник, пари співучасників, аномальна частка перемог, HHI. Те, з чим порівнюємо граф." tag="базовий підхід" />
+        <Tool href="/stats" title="Статистика бази" text="Скільки тендерів, документів і термінів у сховищі." tag="службова" />
+        <Tool href="/search" title="Пошук по тендерах" text="Багатопольовий BM25F-пошук з курсової роботи, на якій виріс цей проєкт." tag="курсова" />
+      </div>
+
+      <p className="text-sm text-muted">
+        Джерела даних: <a href="https://prozorro.gov.ua" className="text-accent">Prozorro</a> (публічний API і портал), реєстр рішень АМКУ на{" "}
+        <a href="https://data.gov.ua" className="text-accent">data.gov.ua</a>. Код і документація дослідження — у репозиторії проєкту.
       </p>
-
-      {/* Step 1 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">1</div>
-          <h2 className="text-xl font-bold text-ink">Проблема: пошук в Prozorro не дуже розумний</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Уявіть: ви журналіст і хочете знайти всі тендери, де компанія "ОККО" перемогла.
-            Ви вводите "ОККО" в пошук Prozorro.
-          </p>
-          <div className="bg-red-50 rounded-xl p-4 mb-4">
-            <p className="font-semibold text-red-800 mb-2">Що отримуєте:</p>
-            <ul className="text-sm text-red-700 space-y-1">
-              <li>• Тендер де ОККО переможець — добре!</li>
-              <li>• Тендер де в PDF написано "заправка на АЗС ОККО" — не те...</li>
-              <li>• Тендер де хтось в коментарі згадав ОККО — взагалі не те!</li>
-            </ul>
-          </div>
-          <p className="text-muted leading-relaxed">
-            <strong className="text-ink">Проблема:</strong> звичайний пошук не розрізняє,
-            де саме знайдено слово. Для нього "ОККО в назві переможця" і "ОККО десь в документах" — однаково.
-          </p>
-        </div>
-      </section>
-
-      {/* Step 2 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">2</div>
-          <h2 className="text-xl font-bold text-ink">Ідея: а що якщо враховувати контекст?</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Ми подумали: тендер — це не просто текст. Це структурований документ з полями:
-          </p>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div className="bg-surface rounded-lg p-3">
-              <p className="font-semibold text-ink text-sm">Назва тендера</p>
-              <p className="text-xs text-muted">Найважливіше поле</p>
-            </div>
-            <div className="bg-surface rounded-lg p-3">
-              <p className="font-semibold text-ink text-sm">Переможець</p>
-              <p className="text-xs text-muted">Дуже важливе</p>
-            </div>
-            <div className="bg-surface rounded-lg p-3">
-              <p className="font-semibold text-ink text-sm">Учасники</p>
-              <p className="text-xs text-muted">Важливе</p>
-            </div>
-            <div className="bg-surface rounded-lg p-3">
-              <p className="font-semibold text-ink text-sm">Опис</p>
-              <p className="text-xs text-muted">Середньої важливості</p>
-            </div>
-            <div className="bg-surface rounded-lg p-3">
-              <p className="font-semibold text-ink text-sm">Документи</p>
-              <p className="text-xs text-muted">Менш важливе</p>
-            </div>
-            <div className="bg-surface rounded-lg p-3">
-              <p className="font-semibold text-ink text-sm">+ ще 30 полів</p>
-              <p className="text-xs text-muted">Різної важливості</p>
-            </div>
-          </div>
-          <p className="text-muted leading-relaxed">
-            <strong className="text-ink">Ідея:</strong> якщо слово знайдено в назві — це важливіше,
-            ніж якщо воно десь в документах. Треба це враховувати при ранжуванні!
-          </p>
-        </div>
-      </section>
-
-      {/* Step 3 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">3</div>
-          <h2 className="text-xl font-bold text-ink">Рішення: алгоритм BM25F</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Виявилось, такий алгоритм вже існує! Називається <strong className="text-ink">BM25F</strong>
-            (Best Match 25 for Fields). Його використовують пошукові системи типу Elasticsearch.
-          </p>
-
-          <div className="bg-surface rounded-xl p-5 mb-4">
-            <p className="font-semibold text-ink mb-3">Як працює BM25F (спрощено):</p>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">1.</span>
-                <p className="text-muted">Кожному полю призначається <strong className="text-ink">вага</strong> (число)</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">2.</span>
-                <p className="text-muted">Назва = 4.0, Переможець = 2.5, Документи = 0.5</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">3.</span>
-                <p className="text-muted">При пошуку система рахує: "знайшли слово в назві? множимо на 4"</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-green-600 font-bold">4.</span>
-                <p className="text-muted">Результат: тендери з важливими збігами — вище в списку</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-amber-50 rounded-xl p-4">
-            <p className="text-amber-800 text-sm">
-              <strong>Аналогія:</strong> це як оцінювати резюме. Якщо людина написала "Python" в навичках —
-              це важливіше, ніж якщо "Python" згадується десь в описі хобі.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 4 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">4</div>
-          <h2 className="text-xl font-bold text-ink">Експеримент: підбір найкращих ваг</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Але які саме ваги призначити? Чому назва = 4.0, а не 3.0 чи 5.0?
-            Ми провели експерименти.
-          </p>
-
-          <div className="bg-surface rounded-xl p-5 mb-4">
-            <p className="font-semibold text-ink mb-3">Що ми зробили:</p>
-            <div className="space-y-3 text-sm">
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold">→</span>
-                <p className="text-muted">Взяли реальні дані: <strong className="text-ink">20,000+ тендерів</strong> з Prozorro</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold">→</span>
-                <p className="text-muted">Проіндексували <strong className="text-ink">36 полів</strong> кожного тендера</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold">→</span>
-                <p className="text-muted">Склали тестові запити з правильними відповідями</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold">→</span>
-                <p className="text-muted">Перебрали різні комбінації ваг (grid search)</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <span className="text-accent font-bold">→</span>
-                <p className="text-muted">Виміряли точність кожної комбінації</p>
-              </div>
-            </div>
-          </div>
-
-          <p className="text-muted leading-relaxed">
-            <strong className="text-ink">Grid search</strong> — це коли ми перебираємо всі можливі комбінації параметрів
-            і дивимось, яка дає найкращий результат. Як підбирати температуру духовки для пирога — пробуємо різні і дивимось, який смачніший.
-          </p>
-        </div>
-      </section>
-
-      {/* Step 5 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">5</div>
-          <h2 className="text-xl font-bold text-ink">Додаткова фіча: українська мова</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Ще одна проблема: українська мова має багато форм одного слова.
-          </p>
-
-          <div className="bg-surface rounded-xl p-5 mb-4">
-            <p className="font-semibold text-ink mb-2">Приклад:</p>
-            <p className="text-muted mb-3">Ви шукаєте "медикамент", але в тендері написано "медикаментів".</p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">медикамент</span>
-              <span className="text-muted">≠</span>
-              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">медикаменти</span>
-              <span className="text-muted">≠</span>
-              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">медикаментів</span>
-              <span className="text-muted">≠</span>
-              <span className="bg-red-100 text-red-700 px-2 py-1 rounded text-sm">медикаментами</span>
-            </div>
-            <p className="text-sm text-muted mt-3">Для комп'ютера це різні слова!</p>
-          </div>
-
-          <div className="bg-green-50 rounded-xl p-5">
-            <p className="font-semibold text-green-800 mb-2">Наше рішення: лематизація</p>
-            <p className="text-green-700 text-sm mb-3">
-              Ми використали бібліотеку <strong>pymorphy2</strong>, яка приводить слова до базової форми:
-            </p>
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="bg-green-100 text-green-700 px-2 py-1 rounded text-sm">медикаментів</span>
-              <span className="text-green-600">→</span>
-              <span className="bg-green-200 text-green-800 px-2 py-1 rounded text-sm font-semibold">медикамент</span>
-            </div>
-            <p className="text-sm text-green-700 mt-3">Тепер пошук знаходить всі форми слова!</p>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 6 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">6</div>
-          <h2 className="text-xl font-bold text-ink">Результат: +27% точності</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Ми порівняли наш пошук з базовим і виміряли різницю.
-          </p>
-
-          <div className="grid md:grid-cols-2 gap-4 mb-6">
-            <div className="bg-gray-100 rounded-xl p-5">
-              <p className="font-semibold text-gray-700 mb-2">Базовий пошук (BM25)</p>
-              <div className="text-3xl font-bold text-gray-600 mb-1">73%</div>
-              <p className="text-sm text-gray-500">точність (MAP)</p>
-            </div>
-            <div className="bg-green-100 rounded-xl p-5">
-              <p className="font-semibold text-green-800 mb-2">Наш пошук (BM25F)</p>
-              <div className="text-3xl font-bold text-green-700 mb-1">100%</div>
-              <p className="text-sm text-green-600">точність (MAP) — на 27% краще</p>
-            </div>
-          </div>
-
-          <div className="bg-surface rounded-xl p-5">
-            <p className="font-semibold text-ink mb-2">Що таке MAP?</p>
-            <p className="text-muted text-sm leading-relaxed">
-              <strong className="text-ink">Mean Average Precision</strong> — метрика якості пошуку.
-              Простими словами: наскільки часто потрібні результати знаходяться вгорі списку, а не десь внизу.
-              Чим вище MAP — тим краще пошук розуміє, що ви шукаєте.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Step 7 */}
-      <section className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-full bg-accent text-white font-bold flex items-center justify-center">7</div>
-          <h2 className="text-xl font-bold text-ink">Бонус: виявлення підозрілих тендерів</h2>
-        </div>
-        <div className="pl-13 ml-5 border-l-2 border-line pl-8 pb-8">
-          <p className="text-muted leading-relaxed mb-4">
-            Окрім пошуку, ми додали автоматичне виявлення ознак можливих порушень
-            за методологією OECD (міжнародна організація економічного співробітництва).
-          </p>
-
-          <div className="space-y-3">
-            <div className="bg-amber-50 rounded-lg p-4 flex items-start gap-3">
-              <span className="text-amber-600 text-xl">⚠️</span>
-              <div>
-                <p className="font-semibold text-amber-800">Один учасник</p>
-                <p className="text-sm text-amber-700">Тендер без конкуренції — можливо, умови "заточені" під когось</p>
-              </div>
-            </div>
-            <div className="bg-red-50 rounded-lg p-4 flex items-start gap-3">
-              <span className="text-red-600 text-xl">⚠️</span>
-              <div>
-                <p className="font-semibold text-red-800">Схожі ціни</p>
-                <p className="text-sm text-red-700">Учасники подали майже однакові ціни — можлива змова</p>
-              </div>
-            </div>
-            <div className="bg-purple-50 rounded-lg p-4 flex items-start gap-3">
-              <span className="text-purple-600 text-xl">⚠️</span>
-              <div>
-                <p className="font-semibold text-purple-800">100% перемог</p>
-                <p className="text-sm text-purple-700">Компанія завжди виграє — статистично підозріло</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Summary */}
-      <section className="bg-accent/5 rounded-3xl p-8 mb-12">
-        <h2 className="text-xl font-bold text-ink mb-4">Підсумок</h2>
-        <div className="space-y-3 text-muted">
-          <p>
-            <strong className="text-ink">Проблема:</strong> звичайний пошук не розрізняє контекст — де саме знайдено слово.
-          </p>
-          <p>
-            <strong className="text-ink">Рішення:</strong> алгоритм BM25F з вагами для різних полів + українська лематизація.
-          </p>
-          <p>
-            <strong className="text-ink">Результат:</strong> пошук став на 27% точнішим, релевантні результати тепер вгорі.
-          </p>
-          <p>
-            <strong className="text-ink">Бонус:</strong> автоматичне виявлення підозрілих тендерів за 7 індикаторами.
-          </p>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="text-center pb-8">
-        <Link
-          href="/search"
-          className="inline-flex items-center gap-2 rounded-xl bg-ink px-8 py-4 text-base font-bold text-white transition hover:bg-accent"
-        >
-          Спробувати пошук
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-          </svg>
-        </Link>
-      </section>
     </div>
   );
 }

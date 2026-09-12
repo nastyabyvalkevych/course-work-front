@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Prozorro Insight",
-  description: "Пошук та аналіз закупівель Prozorro",
+  description: "Виявлення ознак змови учасників публічних закупівель України на графі спільних торгів",
 };
 
 export default function RootLayout({
@@ -37,7 +37,7 @@ export default function RootLayout({
                     Prozorro Insight
                   </p>
                   <p className="mt-0.5 text-xs font-medium text-muted">
-                    OSINT-аналітика закупівель
+                    Ризик змови на торгах
                   </p>
                 </div>
               </a>
@@ -56,12 +56,6 @@ export default function RootLayout({
                 </a>
                 <a
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/osint"
-                >
-                  OSINT
-                </a>
-                <a
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
                   href="/risk"
                 >
                   Ризики
@@ -74,19 +68,13 @@ export default function RootLayout({
                 </a>
                 <a
                   className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/reliability"
+                  href="/risk/backtest"
                 >
-                  Надійність
-                </a>
-                <a
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/stats"
-                >
-                  Статистика
+                  Перевірка
                 </a>
                 <a
                   className="ml-2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-canvas transition hover:bg-accent"
-                  href="/search"
+                  href="/risk"
                 >
                   Почати
                 </a>
