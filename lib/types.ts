@@ -276,3 +276,79 @@ export type RiskTender = {
     tenderRisk: number;
   };
 };
+
+// --- Markov reliability self-assessment ---
+export type ReliabilityModuleSpec = {
+  id: string;
+  name: string;
+  reliability: number;
+  meanSojournMs: number;
+  failureRatePerHour?: number;
+  evidence?: string;
+};
+
+export type ReliabilityTaskSpec = {
+  id: string;
+  name: string;
+  weight: number;
+  path: string[];
+  observedSuccessRate?: number;
+};
+
+export type ReliabilityProfile = {
+  system: string;
+  version?: string;
+  modules: ReliabilityModuleSpec[];
+  tasks: ReliabilityTaskSpec[];
+  requestsPerHour?: number;
+  meanRepairMinutes?: number;
+};
+
+export type ReliabilityReport = {
+  system: string;
+  version?: string;
+  computedAt: string;
+  horizonHours: number;
+  usage: {
+    moduleIds: string[];
+    initial: number[];
+    transition: number[][];
+    exit: number[];
+    taskModule: number[][];
+    moduleUsage: number[];
+  };
+  discrete: {
+    systemReliability: number;
+    expectedPathLength: number;
+    meanResponseMs: number;
+    operationalFailuresPerHour?: number;
+  };
+  continuous: {
+    utilisation: number;
+    failureRatePerHour: number;
+    mttfHours: number;
+    reliabilityAtHorizon: number;
+    curve: { hours: number; reliability: number }[];
+    availability?: number;
+  };
+  modules: {
+    id: string;
+    name: string;
+    reliability: number;
+    meanSojournMs: number;
+    failureRatePerHour: number;
+    expectedVisits: number;
+    timeShare: number;
+    sensitivity: number;
+    improvementPotential: number;
+  }[];
+  tasks: {
+    id: string;
+    name: string;
+    weight: number;
+    modelReliability: number;
+    observedSuccessRate?: number;
+    absError?: number;
+  }[];
+  live?: { database: "ok" | "down"; cache: "ok" | "unavailable" };
+};
