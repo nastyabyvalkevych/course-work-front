@@ -35,7 +35,6 @@ export default function TenderRiskPage() {
   }
   if (!data) return <p className="text-muted">Завантаження…</p>;
 
-  const names = new Map(data.participants.map((p) => [p.edrpou, p.name ?? p.edrpou]));
   const t = data.tender;
   const s = data.signals;
 

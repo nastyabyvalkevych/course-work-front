@@ -463,15 +463,6 @@ export default async function TenderPage({ params, searchParams }: PageProps) {
                 </div>
               </div>
             </div>
-
-            <details className="rounded-[1.5rem] border border-line bg-canvas p-6 group">
-              <summary className="cursor-pointer text-base font-extrabold text-ink outline-none">
-                Відобразити вихідні дані JSON
-              </summary>
-              <pre className="mt-6 max-h-[500px] overflow-auto rounded-xl bg-surface border border-surface-strong p-6 text-xs text-muted font-mono">
-                {JSON.stringify(raw, null, 2)}
-              </pre>
-            </details>
           </div>
         ) : (
           <p className="mt-4 text-base font-semibold text-muted">Детальні JSON-дані відсутні.</p>
