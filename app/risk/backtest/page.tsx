@@ -8,6 +8,8 @@ import { date, num } from "@/lib/risk";
 import { Backtest, BacktestList } from "@/lib/types";
 
 const pct0 = (v: number) => `${Math.round(v * 100)} %`;
+const cutoffLabel = (year: number, cutoffDate: string | null | undefined) =>
+  cutoffDate ? new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium" }).format(new Date(cutoffDate)) : `31.12.${year}`;
 
 function Step({ n, title, text }: { n: number; title: string; text: string }) {
   return (
@@ -21,16 +23,16 @@ function Step({ n, title, text }: { n: number; title: string; text: string }) {
   );
 }
 
-function Timeline({ year }: { year: number }) {
+function Timeline({ year, label, forecast }: { year: number; label: string; forecast: boolean }) {
   return (
     <div className="rounded-2xl border border-line bg-surface p-4">
       <div className="flex items-stretch overflow-hidden rounded-xl text-xs font-semibold">
         <div className="flex-1 bg-slate-200 px-3 py-2 text-slate-800">
-          Сервіс бачить: тендери і рішення АМКУ до 31.12.{year}
+          Сервіс бачить: тендери і рішення АМКУ до {label}
         </div>
         <div className="w-1 bg-ink" />
         <div className="flex-1 bg-red-100 px-3 py-2 text-red-900">
-          Сервіс не бачить: рішення АМКУ {year + 1}–2026. Ними перевіряємо
+          {forecast ? "Майбутні рішення АМКУ ще не відомі. Список заморожено, перевіримо, коли вони з'являться" : `Сервіс не бачить: рішення АМКУ ${year + 1}–2026. Ними перевіряємо`}
         </div>
       </div>
     </div>
@@ -155,7 +157,7 @@ export default function BacktestPage() {
           <label className="flex items-center gap-2">
             Кінець року
             <select value={year ?? ""} onChange={(e) => setYear(Number(e.target.value))} className="rounded-lg border border-line bg-white px-2 py-1">
-              {list.items.map((i) => <option key={i.cutoffYear} value={i.cutoffYear}>{i.cutoffYear}</option>)}
+              {list.items.map((i) => <option key={i.cutoffYear} value={i.cutoffYear}>{cutoffLabel(i.cutoffYear, i.cutoffDate)}{i.totalCaught === 0 ? " · прогноз" : ""}</option>)}
             </select>
           </label>
           <label className="flex items-center gap-2">
@@ -174,8 +176,20 @@ export default function BacktestPage() {
 
       {data && year && (
         <>
-          <Timeline year={year} />
+          <Timeline year={year} label={cutoffLabel(year, data.cutoffDate)} forecast={data.totalCaught === 0} />
 
+          {data.totalCaught === 0 ? (
+          <section className="rounded-2xl border-2 border-ink bg-white p-6">
+            <p className="text-xs font-bold uppercase tracking-wider text-muted">Прогноз наперед</p>
+            <p className="mt-2 text-2xl font-extrabold leading-snug text-ink">
+              Список складено {cutoffLabel(year, data.cutoffDate)} і заморожено. Перевірити його можна буде, коли АМКУ винесе нові рішення.
+            </p>
+            <p className="mt-2 text-base text-muted">
+              Це чесний тест на майбутнє: список уже не зміниться. Коли з’являться рішення після цієї дати, сторінка сама покаже, скільки компаній з верхівки списку їх отримали.
+              Компаній без рішення на дату списку: <b>{num(data.population)}</b>.
+            </p>
+          </section>
+          ) : (
           <section className="rounded-2xl border-2 border-ink bg-white p-6">
             <p className="text-xs font-bold uppercase tracking-wider text-muted">Головний результат</p>
             <p className="mt-2 text-2xl font-extrabold leading-snug text-ink">
@@ -199,7 +213,9 @@ export default function BacktestPage() {
               </dl>
             </div>
           </section>
+          )}
 
+          {data.totalCaught > 0 && (
           <section className="rounded-2xl border border-line bg-surface p-5">
             <h2 className="text-base font-bold text-ink">Що буде, якщо перевіряти більше компаній</h2>
             <p className="mb-3 text-sm text-muted">
@@ -220,12 +236,12 @@ export default function BacktestPage() {
               </table>
             </div>
           </section>
+          )}
 
           <section className="rounded-2xl border border-line bg-surface p-5">
-            <h2 className="text-base font-bold text-ink">Список підозрілих на 31.12.{year} і що сталося з кожною компанією</h2>
+            <h2 className="text-base font-bold text-ink">Список підозрілих на {cutoffLabel(year, data.cutoffDate)}{data.totalCaught > 0 ? " і що сталося з кожною компанією" : ""}</h2>
             <p className="mb-3 text-sm text-muted">
-              Сервіс склав цей список наприкінці {year} року. Стовпець «Коли покарали» показує, через скільки часу АМКУ виніс рішення:
-              часто це не наступний рік, а через два-три.
+              {data.totalCaught > 0 ? "Стовпець «Коли покарали» показує, через скільки часу після дати списку АМКУ виніс рішення: часто це не наступний рік, а через два-три." : "Поки що жодна компанія з цього списку не має рішення після дати зрізу. Список зберігається без змін і буде звірений з майбутніми рішеннями."}
             </p>
 
             <div className="mb-4 rounded-xl border border-line bg-white p-3 text-sm">
@@ -271,7 +287,7 @@ export default function BacktestPage() {
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-surface text-left text-xs uppercase text-muted">
                   <tr>
-                    <th className="py-2 pr-2">Місце на 31.12.{year}</th>
+                    <th className="py-2 pr-2">Місце на {cutoffLabel(year, data.cutoffDate)}</th>
                     <th className="py-2 pr-2">Компанія</th>
                     <th className="py-2 pr-2">Тендерів</th>
                     <th className="py-2 pr-2">Коли покарали</th>
@@ -281,7 +297,7 @@ export default function BacktestPage() {
                 <tbody>
                   {rows.map((t) => {
                     const dy = t.firstDecision ? new Date(t.firstDecision).getFullYear() : null;
-                    const months = t.firstDecision ? Math.max(0, Math.round((new Date(t.firstDecision).getTime() - new Date(`${year}-12-31`).getTime()) / (30.44 * 24 * 3600 * 1000))) : null;
+                    const months = t.firstDecision ? Math.max(0, Math.round((new Date(t.firstDecision).getTime() - new Date(data.cutoffDate ?? `${year}-12-31`).getTime()) / (30.44 * 24 * 3600 * 1000))) : null;
                     return (
                       <tr key={t.edrpou} className={`border-t border-line ${t.outcome === "caught" ? "bg-red-50/70" : ""}`}>
                         <td className="py-2 pr-2 font-mono text-xs">

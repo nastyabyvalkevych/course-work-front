@@ -381,11 +381,14 @@ export type BacktestCompany = {
 };
 
 export type BacktestList = {
-  items: (BacktestMetrics & { cutoffYear: number; modelVersion: string; companies: number })[];
+  items: (BacktestMetrics & { cutoffYear: number; cutoffDate: string | null; modelVersion: string; companies: number })[];
 };
 
 export type Backtest = BacktestMetrics & {
   cutoffYear: number;
+  cutoffDate: string | null;
+  modelVersion: string;
+  computedAt: string;
   fullCoverageOnly: boolean;
   top: BacktestCompany[];
   caughtLater: BacktestCompany[];
