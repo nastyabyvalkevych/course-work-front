@@ -80,6 +80,7 @@ export default function BacktestPage() {
   const [year, setYear] = useState<number | null>(null);
   const [fullOnly, setFullOnly] = useState(true);
   const [limit, setLimit] = useState(100);
+  const [minTenders, setMinTenders] = useState(5);
   const [data, setData] = useState<Backtest | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [view, setView] = useState<"top" | "caught">("top");
@@ -98,10 +99,10 @@ export default function BacktestPage() {
     if (!year) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setError(null);
-    fetchJson<Backtest>(`/api/risk/backtest/${year}?limit=${Math.max(limit, 100)}&fullCoverageOnly=${fullOnly ? 1 : 0}`)
+    fetchJson<Backtest>(`/api/risk/backtest/${year}?limit=${Math.max(limit, 100)}&fullCoverageOnly=${fullOnly ? 1 : 0}&minTenders=${minTenders}`)
       .then(setData)
       .catch((e) => setError(String(e)));
-  }, [year, limit, fullOnly]);
+  }, [year, limit, fullOnly, minTenders]);
 
   const p100 = useMemo(() => data?.curve.find((c) => c.k === 100), [data]);
   const hits100 = useMemo(() => (data ? data.top.slice(0, 100).filter((t) => t.outcome === "caught").length : 0), [data]);
@@ -158,6 +159,12 @@ export default function BacktestPage() {
             Кінець року
             <select value={year ?? ""} onChange={(e) => setYear(Number(e.target.value))} className="rounded-lg border border-line bg-white px-2 py-1">
               {list.items.map((i) => <option key={i.cutoffYear} value={i.cutoffYear}>{cutoffLabel(i.cutoffYear, i.cutoffDate)}{i.totalCaught === 0 ? " · прогноз" : ""}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center gap-2">
+            мін. тендерів на дату зрізу
+            <select value={minTenders} onChange={(e) => setMinTenders(Number(e.target.value))} className="rounded-lg border border-line bg-white px-2 py-1">
+              {[1, 5, 10, 20].map((v) => <option key={v} value={v}>{v}</option>)}
             </select>
           </label>
           <label className="flex items-center gap-2">
@@ -328,6 +335,7 @@ export default function BacktestPage() {
             <p className="font-semibold text-ink">Як читати ці числа чесно</p>
             <ul className="mt-2 list-disc space-y-1 pl-5">
               <li>Список порівнює покараних згодом з компаніями без рішення, які мають таку ж повну історію торгів. Тому «навмання» тут дає {pct0(data.baseRate)}, а не частку змовників на всьому ринку.</li>
+              <li>Компанії з 1–3 тендерами часто опиняються на верхівці лише тому, що їхні кілька партнерів уже покарані. Тому за замовчуванням показано компанії від 5 тендерів; фільтр можна змінити.</li>
               <li>«Рішення поки немає» не означає «чесна». АМКУ перевіряє малу частку ринку, частина цих компаній може бути покарана в майбутньому.</li>
               <li>Сервіс добре відбирає верхівку списку, але більшість майбутніх покараних стоїть у середині. Це підказка, кого перевіряти першим, не доказ.</li>
             </ul>
