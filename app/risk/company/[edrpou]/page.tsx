@@ -8,7 +8,8 @@ import RiskGraphView from "@/components/RiskGraph";
 import { fetchJson } from "@/lib/api";
 import { date, money, num, pct, riskBadgeClass, riskBarColor, riskLabel } from "@/lib/risk";
 import { reasonsCompany, verdictCompany } from "@/lib/explain";
-import { RiskCompany, RiskGraph } from "@/lib/types";
+import { CompanyGroupSummary, CompanyLinkItem, RiskCompany, RiskGraph } from "@/lib/types";
+import { isWatched, toggleWatch } from "@/lib/watchlist";
 
 function Card({ title, children, className = "" }: { title?: string; children: React.ReactNode; className?: string }) {
   return (
@@ -25,6 +26,10 @@ export default function CompanyRiskPage() {
   const [data, setData] = useState<RiskCompany | null>(null);
   const [graph, setGraph] = useState<RiskGraph | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [links, setLinks] = useState<CompanyLinkItem[]>([]);
+  const [groups, setGroups] = useState<CompanyGroupSummary[]>([]);
+  const [watched, setWatched] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     // reset then load on route param change; the synchronous reset is intentional
@@ -34,7 +39,23 @@ export default function CompanyRiskPage() {
     setError(null);
     fetchJson<RiskCompany>(`/api/risk/company/${edrpou}`).then(setData).catch((e) => setError(String(e)));
     fetchJson<RiskGraph>(`/api/risk/company/${edrpou}/graph?limit=40`).then(setGraph).catch(() => setGraph(null));
+    setLinks([]);
+    setGroups([]);
+    fetchJson<CompanyLinkItem[]>(`/api/risk/company/${edrpou}/links`).then(setLinks).catch(() => setLinks([]));
+    fetchJson<CompanyGroupSummary[]>(`/api/risk/company/${edrpou}/groups`).then(setGroups).catch(() => setGroups([]));
+    setWatched(isWatched("company", edrpou));
   }, [edrpou]);
+
+  const copyLink = async () => {
+    const url = typeof window !== "undefined" ? window.location.href : "";
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      window.prompt("Скопіюйте посилання:", url);
+    }
+  };
 
   const onSelect = useCallback((id: string) => router.push(`/risk/company/${id}`), [router]);
 
@@ -64,6 +85,18 @@ export default function CompanyRiskPage() {
           <p className="mt-1 text-sm text-muted">
             ЄДРПОУ {data.edrpou} · історія {data.coverage === "full" ? "повна" : data.coverage === "capped" ? "обрізана стелею порталу" : "часткова"}
           </p>
+          <div className="mt-3 flex flex-wrap gap-2 text-sm">
+            <button
+              onClick={() => setWatched(toggleWatch({ type: "company", id: data.edrpou, name: data.name }))}
+              className={`rounded-lg border px-3 py-1.5 font-semibold ${watched ? "border-ink bg-ink text-canvas" : "border-line bg-white text-ink hover:border-accent"}`}
+            >
+              {watched ? "✓ Стежу" : "Стежити"}
+            </button>
+            <button onClick={copyLink} className="rounded-lg border border-line bg-white px-3 py-1.5 text-ink hover:border-accent">
+              {copied ? "Скопійовано" : "Скопіювати посилання"}
+            </button>
+            <Link href="/risk/watch" className="self-center text-xs text-muted hover:text-ink">мої списки →</Link>
+          </div>
         </div>
         <div className="rounded-2xl border border-line bg-white p-5 text-right">
           <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">Наскільки схожа на покараних</p>
@@ -184,6 +217,50 @@ export default function CompanyRiskPage() {
                   </span>
                 </li>
               ))}
+          </ul>
+        </Card>
+      )}
+
+      {links.length > 0 && (
+        <Card title="Пов’язані компанії: спільні контакти">
+          <p className="mb-3 text-xs text-muted">
+            Ці компанії вказали в картках учасника той самий телефон, пошту, контактну особу або адресу. Спільний телефон у двох
+            «конкурентів» майже завжди означає одну групу людей: серед таких пар дві третини вже названі в одному рішенні АМКУ.
+          </p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {links.map((l) => (
+              <li key={l.edrpou} className="flex items-center justify-between gap-3 rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                <div className="min-w-0">
+                  <Link href={`/risk/company/${l.edrpou}`} className="font-semibold text-ink hover:text-accent">{l.name ?? l.edrpou}</Link>
+                  <div className="text-xs text-muted">
+                    спільні: {l.kinds.map((k) => ({ phone: "телефон", email: "пошта", person: "контактна особа", address: "адреса" })[k] ?? k).join(", ")}
+                    {l.sharedTenders ? ` · ${num(l.sharedTenders)} спільних тендерів` : ""}
+                    {l.label ? <span className="ml-1 font-semibold text-red-700">· уже покарана</span> : null}
+                  </div>
+                </div>
+                <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-semibold ${riskBadgeClass(l.score)}`}>{pct(l.score)}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {groups.length > 0 && (
+        <Card title="Входить у групи, що ходять на торги разом">
+          <p className="mb-3 text-xs text-muted">Група — кілька компаній, які зустрічаються на торгах переважно одна з одною і майже не мають інших конкурентів.</p>
+          <ul className="grid gap-2 sm:grid-cols-2">
+            {groups.map((g) => (
+              <li key={g.id} className="rounded-xl border border-line bg-white px-3 py-2 text-sm">
+                <div className="flex items-center justify-between gap-2">
+                  <Link href={`/risk/groups/${g.id}`} className="font-semibold text-ink hover:text-accent">Група № {g.id}: {g.size} компаній</Link>
+                  <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${riskBadgeClass(g.maxScore)}`}>до {pct(g.maxScore)}</span>
+                </div>
+                <div className="mt-1 text-xs text-muted">
+                  {num(g.sharedTenders)} спільних тендерів{g.sanctioned ? ` · покараних у групі: ${g.sanctioned}` : ""}
+                </div>
+                <div className="mt-1 truncate text-xs text-muted">{g.members.filter((m) => m.edrpou !== data.edrpou).map((m) => m.name ?? m.edrpou).join(", ")}</div>
+              </li>
+            ))}
           </ul>
         </Card>
       )}

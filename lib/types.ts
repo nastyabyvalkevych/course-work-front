@@ -250,6 +250,7 @@ export type RiskTender = {
     tenderID: string | null;
     title: string | null;
     procuringEntity: string | null;
+    buyerEdrpou?: string | null;
     valueAmount: number | null;
     valueCurrency: string | null;
     status: string | null;
@@ -392,4 +393,65 @@ export type Backtest = BacktestMetrics & {
   fullCoverageOnly: boolean;
   top: BacktestCompany[];
   caughtLater: BacktestCompany[];
+};
+
+// --- markets, money, links, groups (company card) ---
+export type Market = {
+  cpv: string;
+  tenders: number;
+  suppliers: number;
+  singleBidderShare: number;
+  twoBidderShare: number;
+  wonTotal: number;
+  wonHighRisk: number;
+  wonSanctioned: number;
+  highRiskShareMoney: number;
+  highRiskSuppliers: number;
+  sanctionedSuppliers: number;
+  highRiskSupplierShare: number;
+};
+export type MarketsResponse = { minTenders: number; items: Market[] };
+
+export type MoneyItem = {
+  key: string | null;
+  wonTotal: number;
+  wonHighRisk: number;
+  wonSanctioned: number;
+  awards: number;
+  awardsHighRisk: number;
+  highRiskShare: number;
+};
+export type MoneyResponse = { by: "year" | "region"; items: MoneyItem[] };
+
+export type CompanyLinkItem = {
+  edrpou: string;
+  name: string | null;
+  score: number | null;
+  label: boolean;
+  nTenders: number | null;
+  kinds: string[];
+  sharedTenders: number;
+};
+
+export type CompanyGroupSummary = {
+  id: number;
+  size: number;
+  sharedTenders: number;
+  totalTenders: number;
+  wonAmount: number;
+  sanctioned: number;
+  sameDecision: number;
+  meanScore: number;
+  maxScore: number;
+  regions: string[];
+  topCpv: string[];
+  members: { edrpou: string; name: string | null; score: number | null; label: boolean }[];
+};
+
+export type WatchItem = {
+  type: "company" | "buyer";
+  id: string;
+  name: string | null;
+  addedAt: string;
+  lastSeen?: string;
 };

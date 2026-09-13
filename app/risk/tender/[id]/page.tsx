@@ -47,7 +47,8 @@ export default function TenderRiskPage() {
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Перевірка тендера</p>
           <h1 className="mt-2 text-2xl font-extrabold tracking-tight text-ink">{t.title ?? t.tenderID}</h1>
           <p className="mt-1 text-sm text-muted">
-            {t.tenderID} · {t.procuringEntity} · {date(t.datePublished)} · {t.procurementMethodType} · {t.status}
+            {t.tenderID} ·{" "}
+            {t.buyerEdrpou ? <Link href={`/risk/buyer/${t.buyerEdrpou}`} className="text-accent hover:underline">{t.procuringEntity}</Link> : t.procuringEntity} · {date(t.datePublished)} · {t.procurementMethodType} · {t.status}
           </p>
           <p className="mt-1 text-sm text-ink">Очікувана вартість: {money(t.valueAmount, t.valueCurrency)}</p>
         </div>
