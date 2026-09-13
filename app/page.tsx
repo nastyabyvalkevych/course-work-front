@@ -137,6 +137,11 @@ export default function Home() {
           <Card href="/risk" title="Рейтинг ризику" text="Список компаній за ризиком змови з фільтрами за областю, активністю і повнотою історії. Картки компаній з поясненням і мапою партнерів." />
           <Card href="/risk/map" title="Мапа України" text="Частка компаній високого ризику і покараних АМКУ по областях. Клік по області відкриває її список." />
           <Card href="/risk/backtest" title="Перевірка на минулому" text="Список підозрілих на кінець року поруч із реальними рішеннями АМКУ наступних років." />
+          <Card href="/risk/groups" title="Хто ходить на торги разом" text="Тісні групи компаній, які роками приходять на тендери лише одна з одною: хто в них, скільки виграли, чи вже когось покарали." />
+          <Card href="/risk/buyers" title="Замовники" text="У кого торги найчастіше проходять «удвох» або з одним учасником, і які постійні пари постачальників навколо них." />
+          <Card href="/risk/markets" title="Ринки і гроші" text="На яких ринках і в яких областях найбільше грошей виграли компанії, схожі на покараних." />
+          <Card href="/risk/guide" title="Як читати цей сайт" text="Три реальні приклади і словничок простими словами: коли високе число щось означає, а коли ні." />
+          <Card href="/risk/watch" title="Мої списки" text="Стежити за компаніями і замовниками: нові тендери, нові зустрічі з партнерами, нові рішення АМКУ." />
           <Card href="/osint" title="Індикатори OECD" text="Прості ознаки, які аудитори перевіряють руками: єдиний учасник, постійні пари, надто часті перемоги, один постачальник на ринку." tag="простий спосіб" />
           <Card href="/reliability" title="Надійність системи" text="Наскільки стабільно працює сам сервіс: як часто відповідає правильно і які його частини найслабші." tag="для розробників" />
           <Card href="/search" title="Пошук по тендерах" text="Знайти тендер за словами з назви чи опису, якщо номера під рукою немає." tag="пошук" />
@@ -150,6 +155,11 @@ export default function Home() {
           <Link href="/risk" className="transition hover:text-ink">Ризики</Link>
           <Link href="/risk/map" className="transition hover:text-ink">Мапа</Link>
           <Link href="/risk/backtest" className="transition hover:text-ink">Перевірка</Link>
+          <Link href="/risk/groups" className="transition hover:text-ink">Групи</Link>
+          <Link href="/risk/buyers" className="transition hover:text-ink">Замовники</Link>
+          <Link href="/risk/markets" className="transition hover:text-ink">Ринки</Link>
+          <Link href="/risk/guide" className="transition hover:text-ink">Як читати</Link>
+          <Link href="/risk/watch" className="transition hover:text-ink">Мої списки</Link>
           <Link href="/osint" className="transition hover:text-ink">OSINT</Link>
           <Link href="/stats" className="transition hover:text-ink">Статистика</Link>
           <Link href="/reliability" className="transition hover:text-ink">Надійність</Link>

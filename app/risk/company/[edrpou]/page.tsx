@@ -8,7 +8,7 @@ import RiskGraphView from "@/components/RiskGraph";
 import { fetchJson } from "@/lib/api";
 import { date, money, num, pct, riskBadgeClass, riskBarColor, riskLabel } from "@/lib/risk";
 import { reasonsCompany, verdictCompany } from "@/lib/explain";
-import { CompanyGroupSummary, CompanyLinkItem, RiskCompany, RiskGraph } from "@/lib/types";
+import { CompanyGroupSummary, CompanyHistoryItem, CompanyLinkItem, RiskCompany, RiskGraph } from "@/lib/types";
 import { isWatched, toggleWatch } from "@/lib/watchlist";
 
 function Card({ title, children, className = "" }: { title?: string; children: React.ReactNode; className?: string }) {
@@ -28,6 +28,7 @@ export default function CompanyRiskPage() {
   const [error, setError] = useState<string | null>(null);
   const [links, setLinks] = useState<CompanyLinkItem[]>([]);
   const [groups, setGroups] = useState<CompanyGroupSummary[]>([]);
+  const [history, setHistory] = useState<CompanyHistoryItem[]>([]);
   const [watched, setWatched] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -43,6 +44,7 @@ export default function CompanyRiskPage() {
     setGroups([]);
     fetchJson<CompanyLinkItem[]>(`/api/risk/company/${edrpou}/links`).then(setLinks).catch(() => setLinks([]));
     fetchJson<CompanyGroupSummary[]>(`/api/risk/company/${edrpou}/groups`).then(setGroups).catch(() => setGroups([]));
+    fetchJson<CompanyHistoryItem[]>(`/api/risk/company/${edrpou}/history`).then(setHistory).catch(() => setHistory([]));
     setWatched(isWatched("company", edrpou));
   }, [edrpou]);
 
@@ -100,10 +102,10 @@ export default function CompanyRiskPage() {
         </div>
         <div className="rounded-2xl border border-line bg-white p-5 text-right">
           <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">Наскільки схожа на покараних</p>
-          <p className="mt-2 text-5xl font-extrabold leading-none" style={{ color: riskBarColor(data.score) }}>{pct(data.score)}</p>
+          <p className="mt-2 text-5xl font-extrabold leading-none" style={{ color: riskBarColor(data.score) }}>{data.score < 0.01 ? "< 1 %" : pct(data.score)}</p>
           <p className="mt-2 text-sm">
             <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${riskBadgeClass(data.score)}`}>{riskLabel(data.score)}</span>
-            <span className="ml-2 text-muted">ризик вищий, ніж у {data.percentile.toFixed(0)} % компаній</span>
+            {data.percentile >= 1 && <span className="ml-2 text-muted">ризик вищий, ніж у {data.percentile.toFixed(0)} % компаній</span>}
           </p>
         </div>
       </header>
@@ -298,6 +300,36 @@ export default function CompanyRiskPage() {
           </table>
         </div>
       </Card>
+
+      {history.length > 0 && (
+        <Card title="Як сервіс оцінював цю компанію раніше">
+          <p className="mb-3 text-xs text-muted">
+            Оцінки із «перевірки на минулому»: що сервіс сказав би про компанію на кожну дату зрізу, знаючи лише тодішні
+            тендери й рішення АМКУ. Місце рахується серед компаній з повною історією і від 5 тендерів, які ще не були в реєстрі.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase tracking-wider text-muted">
+                <tr><th className="py-2 pr-4">Дата зрізу</th><th className="py-2 pr-4">Тендерів тоді</th><th className="py-2 pr-4">Місце у списку</th><th className="py-2">Примітка</th></tr>
+              </thead>
+              <tbody>
+                {history.map((h) => (
+                  <tr key={h.cutoffYear} className="border-t border-line">
+                    <td className="py-2 pr-4">{h.cutoffDate ? date(h.cutoffDate) : `31.12.${h.cutoffYear}`}</td>
+                    <td className="py-2 pr-4 font-mono">{num(h.nTenders)}</td>
+                    <td className="py-2 pr-4 font-mono">{h.position ? `${num(h.position)} з ${num(h.population ?? 0)}` : "—"}</td>
+                    <td className="py-2 text-xs text-muted">
+                      {h.note ?? (h.position && h.population && h.position <= h.population * 0.1 ? "у верхніх 10 % списку" : h.position ? "поза верхівкою списку" : "")}
+                      {h.outcome === "caught" && h.firstDecision ? ` · АМКУ покарав ${date(h.firstDecision)}` : ""}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="mt-2 text-xs text-muted">Різні дати можуть давати дуже різні місця: поки історія компанії коротка, оцінка нестійка і залежить від кількох партнерів.</p>
+        </Card>
+      )}
 
       <Card title="Останні тендери">
         <ul className="divide-y divide-line text-sm">

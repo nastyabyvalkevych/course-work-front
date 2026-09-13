@@ -74,6 +74,18 @@ export default function RootLayout({
                   Перевірка
                 </Link>
                 <Link
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
+                  href="/risk/groups"
+                >
+                  Групи
+                </Link>
+                <Link
+                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
+                  href="/risk/buyers"
+                >
+                  Замовники
+                </Link>
+                <Link
                   className="ml-2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-canvas transition hover:bg-accent"
                   href="/risk"
                 >

@@ -455,3 +455,19 @@ export type WatchItem = {
   addedAt: string;
   lastSeen?: string;
 };
+
+export type CompanyHistoryItem = {
+  cutoffYear: number;
+  cutoffDate: string | null;
+  score: number;
+  rankFull: number | null;
+  rank: number;
+  nTenders: number;
+  coverage: string;
+  knownAtCutoff: boolean;
+  outcome: "known" | "caught" | "none";
+  firstDecision?: string | null;
+  position: number | null;
+  population: number | null;
+  note: string | null;
+};

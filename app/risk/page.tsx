@@ -83,6 +83,12 @@ function RiskHomeInner() {
         </p>
       </section>
 
+      <nav className="flex flex-wrap gap-2 text-sm">
+        {[["/risk/map", "Мапа областей"], ["/risk/groups", "Хто ходить разом"], ["/risk/buyers", "Замовники"], ["/risk/markets", "Ринки і гроші"], ["/risk/backtest", "Перевірка на минулому"], ["/risk/guide", "Як читати"], ["/risk/watch", "Мої списки"]].map(([h, t]) => (
+          <Link key={h} href={h} className="rounded-full border border-line bg-surface px-3 py-1 font-semibold text-ink transition hover:border-accent hover:text-accent">{t}</Link>
+        ))}
+      </nav>
+
       {summary && (
         <section className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <Stat label="Компаній оцінено" value={num(summary.companiesScored)} sub="кожна має оцінку схожості з покараними" />
