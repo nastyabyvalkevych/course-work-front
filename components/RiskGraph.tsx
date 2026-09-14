@@ -189,11 +189,21 @@ export default function RiskGraphView({
         })
         .on("end", (ev, d) => {
           sim.alphaTarget(0);
-          if (!d.center) {
-            d.fx = null;
-            d.fy = null;
-          }
+          // node stays where the user put it; double-click releases it
+          d.fx = ev.x;
+          d.fy = ev.y;
         }),
+    );
+    node.on("dblclick", (ev: MouseEvent, d) => {
+      ev.stopPropagation();
+      if (d.center) return;
+      d.fx = null;
+      d.fy = null;
+      sim.alpha(0.3).restart();
+    });
+    svg.on("dblclick.zoom", null);
+    node.call(
+      d3.drag<SVGGElement, SimNode>().on("start", () => {}),
     );
 
     return () => {
@@ -215,7 +225,7 @@ export default function RiskGraphView({
           <input type="checkbox" checked={allLabels} onChange={(e) => setAllLabels(e.target.checked)} />
           підписати всі
         </label>
-        <span>перетягуйте кола, крутіть колесо миші для масштабу, клік відкриває картку партнера</span>
+        <span>перетягнуте коло лишається на місці, подвійний клік відпускає його; колесо миші — масштаб; клік — картка партнера</span>
       </div>
 
       <svg ref={ref} className="w-full rounded-2xl border border-line bg-white" style={{ height }} role="img" aria-label={`Мапа партнерів компанії ${centreName ?? ""} по торгах`} />
