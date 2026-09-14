@@ -52,7 +52,9 @@ export default function RiskGraphView({
     const svg = d3.select<SVGSVGElement, unknown>(ref.current);
     svg.selectAll("*").remove();
     const width = ref.current.clientWidth || 800;
-    setWrapWidth(wrapRef.current?.clientWidth ?? width);
+    const w = wrapRef.current?.clientWidth ?? width;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setWrapWidth(w);
 
     const centre0 = graph.nodes.find((n) => n.center);
     const partners = graph.nodes.filter((n) => !n.center).sort((a, b) => b.nTenders - a.nTenders).slice(0, limit);
