@@ -42,6 +42,7 @@ export default function RiskGraphView({
   const [limit, setLimit] = useState(20);
   const [allLabels, setAllLabels] = useState(false);
   const [tip, setTip] = useState<{ x: number; y: number; node: SimNode } | null>(null);
+  const [wrapWidth, setWrapWidth] = useState(600);
 
   const centreName = useMemo(() => graph.nodes.find((n) => n.center)?.name ?? null, [graph]);
   const totalPartners = graph.nodes.filter((n) => !n.center).length;
@@ -51,6 +52,7 @@ export default function RiskGraphView({
     const svg = d3.select<SVGSVGElement, unknown>(ref.current);
     svg.selectAll("*").remove();
     const width = ref.current.clientWidth || 800;
+    setWrapWidth(wrapRef.current?.clientWidth ?? width);
 
     const centre0 = graph.nodes.find((n) => n.center);
     const partners = graph.nodes.filter((n) => !n.center).sort((a, b) => b.nTenders - a.nTenders).slice(0, limit);
@@ -231,7 +233,7 @@ export default function RiskGraphView({
       </div>
 
       {tip && (
-        <div className="pointer-events-none absolute z-10 max-w-xs rounded-xl border border-line bg-white p-3 text-xs shadow-lg" style={{ left: Math.min(tip.x + 14, (wrapRef.current?.clientWidth ?? 600) - 260), top: tip.y + 14 }}>
+        <div className="pointer-events-none absolute z-10 max-w-xs rounded-xl border border-line bg-white p-3 text-xs shadow-lg" style={{ left: Math.min(tip.x + 14, wrapWidth - 260), top: tip.y + 14 }}>
           <p className="font-bold text-ink">{tip.node.name ?? tip.node.edrpou}</p>
           <p className="font-mono text-muted">{tip.node.edrpou}</p>
           {tip.node.center ? (
