@@ -202,9 +202,6 @@ export default function RiskGraphView({
       sim.alpha(0.3).restart();
     });
     svg.on("dblclick.zoom", null);
-    node.call(
-      d3.drag<SVGGElement, SimNode>().on("start", () => {}),
-    );
 
     return () => {
       sim.stop();
