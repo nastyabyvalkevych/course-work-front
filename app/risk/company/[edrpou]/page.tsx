@@ -5,10 +5,11 @@ import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
 import RiskGraphView from "@/components/RiskGraph";
+import SignalDetails from "@/components/SignalDetails";
 import { fetchJson } from "@/lib/api";
 import { date, money, num, pct, riskBadgeClass, riskBarColor, riskLabel } from "@/lib/risk";
-import { reasonsCompany, verdictCompany } from "@/lib/explain";
-import { CompanyGroupSummary, CompanyHistoryItem, CompanyLinkItem, RiskCompany, RiskGraph } from "@/lib/types";
+import { evaluateSignals, formatSignalValue, points, SignalResult } from "@/lib/explain";
+import { CompanyEvidence, CompanyGroupSummary, FeatureNorms, CompanyHistoryItem, CompanyLinkItem, RiskCompany, RiskGraph } from "@/lib/types";
 import { isWatched, toggleWatch } from "@/lib/watchlist";
 
 function Card({ title, children, className = "" }: { title?: string; children: React.ReactNode; className?: string }) {
@@ -31,6 +32,19 @@ export default function CompanyRiskPage() {
   const [history, setHistory] = useState<CompanyHistoryItem[]>([]);
   const [watched, setWatched] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [norms, setNorms] = useState<FeatureNorms | null>(null);
+  const [evidence, setEvidence] = useState<CompanyEvidence | null>(null);
+  const [evidenceFailed, setEvidenceFailed] = useState(false);
+  const loadEvidence = useCallback(() => {
+    setEvidenceFailed(false);
+    fetchJson<CompanyEvidence>(`/api/risk/company/${edrpou}/evidence`)
+      .then(setEvidence)
+      .catch(() => setEvidenceFailed(true));
+  }, [edrpou]);
+
+  useEffect(() => {
+    fetchJson<FeatureNorms>("/api/risk/feature-norms").then(setNorms).catch(() => setNorms(null));
+  }, []);
 
   useEffect(() => {
     // reset then load on route param change; the synchronous reset is intentional
@@ -39,14 +53,16 @@ export default function CompanyRiskPage() {
     setGraph(null);
     setError(null);
     fetchJson<RiskCompany>(`/api/risk/company/${edrpou}`).then(setData).catch((e) => setError(String(e)));
-    fetchJson<RiskGraph>(`/api/risk/company/${edrpou}/graph?limit=40`).then(setGraph).catch(() => setGraph(null));
+    fetchJson<RiskGraph>(`/api/risk/company/${edrpou}/graph?limit=300`).then(setGraph).catch(() => setGraph(null));
+    setEvidence(null);
+    loadEvidence();
     setLinks([]);
     setGroups([]);
     fetchJson<CompanyLinkItem[]>(`/api/risk/company/${edrpou}/links`).then(setLinks).catch(() => setLinks([]));
     fetchJson<CompanyGroupSummary[]>(`/api/risk/company/${edrpou}/groups`).then(setGroups).catch(() => setGroups([]));
     fetchJson<CompanyHistoryItem[]>(`/api/risk/company/${edrpou}/history`).then(setHistory).catch(() => setHistory([]));
     setWatched(isWatched("company", edrpou));
-  }, [edrpou]);
+  }, [edrpou, loadEvidence]);
 
   const copyLink = async () => {
     const url = typeof window !== "undefined" ? window.location.href : "";
@@ -74,14 +90,12 @@ export default function CompanyRiskPage() {
   }
   if (!data) return <p className="text-muted">Завантаження…</p>;
 
-  const maxAbs = Math.max(...data.contributions.map((c) => Math.abs(c.contribution)), 1e-6);
-
   return (
     <div className="space-y-8">
       <Link href="/risk" className="text-sm text-muted hover:text-ink">← До рейтингу</Link>
 
-      <header className="flex flex-wrap items-start justify-between gap-6">
-        <div>
+      <header className="grid items-start gap-6 md:grid-cols-[minmax(0,1fr)_20rem]">
+        <div className="min-w-0">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Картка компанії</p>
           <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-ink">{data.name ?? data.edrpou}</h1>
           <p className="mt-1 text-sm text-muted">
@@ -100,35 +114,89 @@ export default function CompanyRiskPage() {
             <Link href="/risk/watch" className="self-center text-xs text-muted hover:text-ink">мої списки →</Link>
           </div>
         </div>
-        <div className="rounded-2xl border border-line bg-white p-5 text-right">
-          <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">Наскільки схожа на покараних</p>
-          <p className="mt-2 text-5xl font-extrabold leading-none" style={{ color: riskBarColor(data.score) }}>{data.score < 0.01 ? "< 1 %" : pct(data.score)}</p>
-          <p className="mt-2 text-sm">
-            <span className={`rounded-full border px-2 py-0.5 text-xs font-semibold ${riskBadgeClass(data.score)}`}>{riskLabel(data.score)}</span>
-            {data.percentile >= 1 && <span className="ml-2 text-muted">ризик вищий, ніж у {data.percentile.toFixed(0)} % компаній</span>}
+        <div className="rounded-2xl border border-line bg-white p-5 md:text-right">
+          <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">Ризик змови на торгах</p>
+          <p className="mt-2 text-4xl font-extrabold leading-none" style={{ color: riskBarColor(data.score) }}>{riskLabel(data.score)}</p>
+          <p className="mt-2 text-sm font-semibold text-ink">
+            {data.score < 0.01 ? "менше 1 бала" : points(Math.round(data.score * 100))} зі 100
+          </p>
+          {data.percentile >= 1 && (
+            <p className="mt-1 text-sm text-muted">
+              {data.percentile >= 50
+                ? <>вище, ніж у {data.percentile.toFixed(0)} % компаній</>
+                : <>нижче, ніж у {(100 - data.percentile).toFixed(0)} % компаній</>}
+            </p>
+          )}
+          <p className="mt-2 text-xs text-muted">
+            Бали показують, наскільки поведінка компанії на торгах схожа на поведінку фірм, яких АМКУ вже покарав за змову.
+            Це привід перевірити, а не доказ.
           </p>
         </div>
       </header>
 
       {(() => {
-        const v = verdictCompany(data);
-        const reasons = reasonsCompany(data);
+        const sanctionedPartners = Math.max(
+          data.coBidders.filter((p) => p.label).length,
+          data.topNeighbors.filter((n) => n.label).length,
+        );
+        const results = evaluateSignals(data.features, { nTenders: data.nTenders, degree: data.degree, sanctionedPartners });
+        const hits = results.filter((r) => r.hit).length;
+        const groupNames = [...new Set(results.map((r) => r.signal.group))];
+        const row = (r: SignalResult) => {
+          const norm = r.signal.feature ? norms?.[r.signal.feature] : undefined;
+          return (
+            <li key={r.signal.id}>
+              <details className={`group rounded-xl border text-sm ${r.hit ? "border-red-200 bg-red-50" : "border-line bg-white"}`}>
+                <summary className="grid cursor-pointer list-none gap-1 px-3 py-2 sm:grid-cols-[1.5rem_1fr_6rem_7rem_1rem] sm:items-center sm:gap-3 [&::-webkit-details-marker]:hidden">
+                  <span aria-hidden className={`font-bold ${r.hit ? "text-red-700" : "text-muted"}`}>{r.hit ? "!" : r.enoughData && r.value !== undefined ? "✓" : "·"}</span>
+                  <div className="min-w-0">
+                    <p className={`font-semibold ${r.hit ? "text-red-900" : "text-ink"}`}>{r.signal.title}</p>
+                    <p className="text-xs text-muted">{r.signal.text} <span className="whitespace-nowrap">Поріг: {r.signal.threshold}.</span></p>
+                  </div>
+                  <div className="sm:text-right">
+                    <span className="text-[0.65rem] uppercase tracking-wider text-muted sm:hidden">у компанії </span>
+                    <span className={`font-mono ${r.hit ? "font-bold text-red-800" : "text-ink"}`}>
+                      {!r.enoughData ? "мало даних" : formatSignalValue(r.signal, r.value)}
+                    </span>
+                  </div>
+                  <div className="text-xs text-muted sm:text-right">
+                    {norm ? <>зазвичай {formatSignalValue(r.signal, norm.p50)}</> : r.signal.id === "sanctioned" ? "зазвичай 0" : ""}
+                  </div>
+                  <span aria-hidden className="hidden text-muted transition group-open:rotate-90 sm:block">›</span>
+                  <span className="text-xs font-semibold text-accent sm:hidden">докладніше ›</span>
+                </summary>
+                <div className="border-t border-line/70 px-3 py-3 sm:pl-12">
+                  <SignalDetails id={r.signal.id} data={data} evidence={evidence} evidenceFailed={evidenceFailed} onRetry={loadEvidence} links={links} groups={groups} />
+                </div>
+              </details>
+            </li>
+          );
+        };
         return (
-          <section className="rounded-2xl border-2 border-ink bg-white p-6">
-            <p className="text-xs font-bold uppercase tracking-wider text-muted">Простими словами</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-ink">{v.title}</h2>
-            <p className="mt-2 text-base text-muted">{v.text}</p>
-            <ul className="mt-5 grid gap-3 md:grid-cols-2">
-              {reasons.map((r) => (
-                <li key={r.title} className={`rounded-xl border p-4 ${r.kind === "up" ? "border-red-200 bg-red-50" : r.kind === "down" ? "border-green-200 bg-green-50" : "border-line bg-surface"}`}>
-                  <p className="text-xs font-bold uppercase tracking-wider">
-                    {r.kind === "up" ? <span className="text-red-700">▲ підвищує ризик</span> : r.kind === "down" ? <span className="text-green-700">▼ знижує ризик</span> : <span className="text-muted">● варто знати</span>}
-                  </p>
-                  <p className="mt-1 font-semibold text-ink">{r.title}</p>
-                  <p className="mt-1 text-sm text-muted">{r.text}</p>
-                </li>
+          <section id="signals" className="scroll-mt-6 rounded-2xl border border-line bg-surface p-5">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h2 className="text-sm font-bold uppercase tracking-wider text-muted">Перевірка за ознаками змови</h2>
+              <p className="text-sm font-semibold text-ink">
+                {hits ? <span className="text-red-800">спрацювало {hits} з {results.length}</span> : `жодна з ${results.length} ознак не спрацювала`}
+              </p>
+            </div>
+            <p className="mt-1 text-xs text-muted">
+              Кожен рядок — одна відома ознака змови на торгах. Модель рахує 38 показників; тут показано ті {results.length}, що є
+              ознаками змови самі по собі. Решта (розмір мережі, кількість ринків, центральність тощо) лише описують компанію і
+              окремо нічого не означають. «!» — компанія помітно відрізняється від звичайних (поріг приблизно на
+              рівні верхніх 10 % ринку), «✓» — у межах норми, «·» — не вистачає даних. «Зазвичай» — медіана серед компаній з 10+ тендерами,
+              яких АМКУ не карав. Натисніть на рядок, щоб побачити конкретних партнерів і тендери. Модель зважує всі показники
+              і зв&apos;язки разом, тому бали ризику не дорівнюють кількості спрацьованих ознак.
+              {evidence?.cutoff && <> Компанію вже покарано, тому враховано лише тендери до рішення від {date(evidence.cutoff)}</>}
+            </p>
+            <div className="mt-4 space-y-4">
+              {groupNames.map((g) => (
+                <div key={g}>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-ink">{g}</p>
+                  <ul className="space-y-1.5">{results.filter((r) => r.signal.group === g).map(row)}</ul>
+                </div>
               ))}
-            </ul>
+            </div>
           </section>
         );
       })()}
@@ -161,43 +229,15 @@ export default function CompanyRiskPage() {
         ))}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-5">
-        <Card title="Показники для фахівців" className="lg:col-span-2">
-          <p className="mb-3 text-xs text-muted">
-            Які показники компанії тягнуть оцінку вгору (червоне) або вниз (зелене). Окрім них, сервіс
-            враховує партнерів, показаних на мапі праворуч.
-          </p>
-          <ul className="space-y-2">
-            {data.contributions.map((c) => (
-              <li key={c.feature} className="text-sm">
-                <div className="flex justify-between">
-                  <span className="text-ink">{c.label}</span>
-                  <span className="font-mono text-xs text-muted">
-                    {c.feature.includes("rate") || c.feature.includes("share") || c.feature === "clustering"
-                      ? c.value.toFixed(2)
-                      : num(Math.round(c.value))}
-                  </span>
-                </div>
-                <div className="mt-1 h-2 w-full rounded bg-line/60">
-                  <div
-                    className="h-2 rounded"
-                    style={{
-                      width: `${(Math.abs(c.contribution) / maxAbs) * 100}%`,
-                      background: c.contribution > 0 ? "#dc2626" : "#16a34a",
-                    }}
-                  />
-                </div>
-              </li>
-            ))}
-          </ul>
-        </Card>
-        <Card title="З ким ходить на торги" className="lg:col-span-3">
-          <p className="mb-3 text-xs text-muted">
-            Компанія в центрі, навколо — ті, з ким вона зустрічалась на торгах. Наведіть на коло, щоб побачити подробиці; червона обводка зі знаком «!» означає, що партнер уже покараний.
-          </p>
-          {graph ? <RiskGraphView graph={graph} onSelect={onSelect} /> : <p className="text-sm text-muted">Граф завантажується…</p>}
-        </Card>
-      </div>
+      <section id="graph" className="scroll-mt-6 rounded-2xl border border-line bg-surface p-5">
+        <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-muted">З ким ходить на торги</h2>
+        <p className="mb-3 text-xs text-muted">
+          Компанія в центрі, навколо — усі, з ким вона зустрічалась на торгах{data.degree > 300 ? ` (показано 300 найчастіших із ${num(data.degree)})` : ""}.
+          Чим більше спільних тендерів, тим ближче партнер до центру і тим більше коло. Наведіть на коло, щоб побачити подробиці;
+          знак «!» означає, що партнер уже покараний.
+        </p>
+        {graph ? <RiskGraphView graph={graph} onSelect={onSelect} height={720} /> : <p className="text-sm text-muted">Граф завантажується…</p>}
+      </section>
 
       {data.topNeighbors.some((n) => n.influence !== undefined) && (
         <Card title="Через кого ризик вищий">

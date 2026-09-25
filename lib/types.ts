@@ -151,7 +151,11 @@ export type RiskRankingItem = {
   nWon: number;
   winRate: number;
   degree: number;
+  features?: Record<string, number>; // present in the ranking and on the card
+  sanctionedNeighbors?: number; // ranking only: closest partners already in the register
 };
+
+export type FeatureNorms = Record<string, { p50: number; p90: number }>;
 
 export type RiskRegion = {
   region: string;
@@ -470,4 +474,33 @@ export type CompanyHistoryItem = {
   position: number | null;
   population: number | null;
   note: string | null;
+};
+
+export type EvidenceTender = {
+  id: number;
+  tenderID: string | null;
+  title: string | null;
+  buyer: string | null;
+  datePublished: string | null;
+  valueAmount: number | null;
+  bidders: number;
+  amount: number | null;
+  minAmount: number | null;
+  secondAmount: number | null;
+  cv: number | null;
+  partnerAmount: number | null;
+  minutesToPartner: number | null;
+  winner: "self" | "partner" | "other" | null;
+};
+
+export type CompanyEvidence = {
+  tenders: number;
+  cutoff: string | null; // sanctioned company: only tenders before this date are counted
+  partner: (RiskCoBidder & { pairWonSelf: number; pairWonPartner: number }) | null;
+  topBuyers: { name: string; tenders: number; won: number }[];
+  signals: Record<
+    | "two_bidders" | "cover_bids" | "lost_cheapest" | "won_not_cheapest" | "with_partner" | "near_identical" | "fast_bids"
+    | "round_bids" | "small_gap" | "similar_bids" | "single_bidder",
+    { count: number; examples: EvidenceTender[] }
+  >;
 };

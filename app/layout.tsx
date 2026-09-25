@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Geist_Mono, Manrope } from "next/font/google";
 import Link from "next/link";
+
+import NavLinks from "@/components/NavLinks";
 import "./globals.css";
 
 const manrope = Manrope({
@@ -42,56 +44,7 @@ export default function RootLayout({
                   </p>
                 </div>
               </Link>
-              <nav className="flex items-center gap-1 sm:gap-2">
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/about"
-                >
-                  Про проєкт
-                </Link>
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/search"
-                >
-                  Пошук
-                </Link>
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/risk"
-                >
-                  Ризики
-                </Link>
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/risk/map"
-                >
-                  Мапа
-                </Link>
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/risk/backtest"
-                >
-                  Перевірка
-                </Link>
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/risk/groups"
-                >
-                  Групи
-                </Link>
-                <Link
-                  className="rounded-lg px-3 py-2 text-sm font-semibold text-ink transition hover:bg-surface"
-                  href="/risk/buyers"
-                >
-                  Замовники
-                </Link>
-                <Link
-                  className="ml-2 rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-canvas transition hover:bg-accent"
-                  href="/risk"
-                >
-                  Почати
-                </Link>
-              </nav>
+              <NavLinks />
             </div>
           </header>
           <main className="mx-auto w-full max-w-7xl px-5 pb-16 pt-8 sm:px-6 lg:px-8">

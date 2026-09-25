@@ -23,8 +23,9 @@ const short = (s: string | null, n = 26) => {
 };
 
 /**
- * Ego network of a company: the company in the middle, its co-bidders around.
- * Circle size = how many tenders they shared with the centre; colour = risk;
+ * Ego network of a company: the company in the middle, all its co-bidders around.
+ * Distance from the centre and circle size = how many tenders they shared (closer and
+ * bigger = met more often); colour = risk;
  * dark-red ring = already in the AMCU register; line thickness = how often the
  * two met. Hover highlights a partner and shows a readable tooltip.
  */
@@ -39,13 +40,11 @@ export default function RiskGraphView({
 }) {
   const ref = useRef<SVGSVGElement | null>(null);
   const wrapRef = useRef<HTMLDivElement | null>(null);
-  const [limit, setLimit] = useState(20);
   const [allLabels, setAllLabels] = useState(false);
   const [tip, setTip] = useState<{ x: number; y: number; node: SimNode } | null>(null);
   const [wrapWidth, setWrapWidth] = useState(600);
 
   const centreName = useMemo(() => graph.nodes.find((n) => n.center)?.name ?? null, [graph]);
-  const totalPartners = graph.nodes.filter((n) => !n.center).length;
 
   useEffect(() => {
     if (!ref.current) return;
@@ -57,7 +56,8 @@ export default function RiskGraphView({
     setWrapWidth(w);
 
     const centre0 = graph.nodes.find((n) => n.center);
-    const partners = graph.nodes.filter((n) => !n.center).sort((a, b) => b.nTenders - a.nTenders).slice(0, limit);
+    const partners = graph.nodes.filter((n) => !n.center).sort((a, b) => b.nTenders - a.nTenders);
+    const many = partners.length > 60;
     const nodes: SimNode[] = [...(centre0 ? [{ ...centre0 }] : []), ...partners.map((n) => ({ ...n }))];
     const byId = new Map(nodes.map((n) => [n.edrpou, n]));
     const centre = nodes.find((n) => n.center);
@@ -73,7 +73,28 @@ export default function RiskGraphView({
     ];
     const maxW = d3.max(links, (l) => l.weight) ?? 1;
     const maxN = d3.max(partners, (n) => n.nTenders) ?? 1;
-    const r = (n: SimNode) => (n.center ? 24 : 8 + 16 * Math.sqrt(n.nTenders / maxN));
+    const r = (n: SimNode) => (n.center ? 24 : many ? 4 + 9 * Math.sqrt(n.nTenders / maxN) : 8 + 16 * Math.sqrt(n.nTenders / maxN));
+    // ring radius: the partner met most often sits right next to the centre, one-off meetings on the rim
+    const inner = 70;
+    const outer = Math.max(inner + 80, Math.min(width, height) / 2 - 30);
+    const ring = (n: SimNode) => inner + (outer - inner) * (1 - Math.log1p(n.nTenders) / Math.log1p(maxN));
+    // start every partner on its own ring, spread evenly by angle, so the layout is a full circle
+    partners.forEach((n, i) => {
+      const a = (2 * Math.PI * i) / Math.max(1, partners.length) + (i % 2) * 0.3;
+      const node = nodes.find((x) => x.edrpou === n.edrpou)!;
+      const rr = ring(node);
+      node.x = width / 2 + rr * Math.cos(a);
+      node.y = height / 2 + rr * Math.sin(a);
+    });
+    const labelled = new Set(partners.slice(0, many ? 6 : 15).filter((n) => n.nTenders >= maxN * 0.3).map((n) => n.edrpou));
+    const neighbours = new Map<string, Set<string>>();
+    for (const l of links) {
+      const a = l.source as string, b = l.target as string;
+      if (!neighbours.has(a)) neighbours.set(a, new Set());
+      if (!neighbours.has(b)) neighbours.set(b, new Set());
+      neighbours.get(a)!.add(b);
+      neighbours.get(b)!.add(a);
+    }
 
     const g = svg.append("g");
     svg.call(d3.zoom<SVGSVGElement, unknown>().scaleExtent([0.4, 4]).on("zoom", (ev) => g.attr("transform", ev.transform)));
@@ -84,14 +105,14 @@ export default function RiskGraphView({
       .data(links)
       .join("line")
       .attr("stroke", (l) => (l.star ? "#64748b" : "#cbd5e1"))
-      .attr("stroke-opacity", (l) => (l.star ? 0.7 : 0.6))
-      .attr("stroke-width", (l) => 1 + 6 * (l.weight / maxW));
+      .attr("stroke-opacity", (l) => (l.star ? (many ? 0.35 : 0.7) : many ? 0.3 : 0.6))
+      .attr("stroke-width", (l) => (many ? 0.6 + 4 * (l.weight / maxW) : 1 + 6 * (l.weight / maxW)));
 
     // numbers on the thickest star edges: how many tenders the two shared
     const edgeLabel = g
       .append("g")
       .selectAll("text")
-      .data(links.filter((l) => l.star && l.weight >= Math.max(2, maxW * 0.25)))
+      .data(links.filter((l) => l.star && l.weight >= Math.max(2, maxW * 0.25)).slice(0, many ? 8 : 20))
       .join("text")
       .attr("font-size", 10)
       .attr("font-weight", 700)
@@ -113,7 +134,8 @@ export default function RiskGraphView({
         const rect = wrapRef.current?.getBoundingClientRect();
         setTip({ x: ev.clientX - (rect?.left ?? 0), y: ev.clientY - (rect?.top ?? 0), node: d });
         link.attr("stroke-opacity", (l) => ((l.source as SimNode).edrpou === d.edrpou || (l.target as SimNode).edrpou === d.edrpou ? 0.95 : 0.12));
-        node.attr("opacity", (o) => (o.edrpou === d.edrpou || o.center || links.some((l) => ((l.source as SimNode).edrpou === d.edrpou && (l.target as SimNode).edrpou === o.edrpou) || ((l.target as SimNode).edrpou === d.edrpou && (l.source as SimNode).edrpou === o.edrpou)) ? 1 : 0.25));
+        const near = neighbours.get(d.edrpou);
+        node.attr("opacity", (o) => (o.edrpou === d.edrpou || o.center || near?.has(o.edrpou) ? 1 : 0.2));
       })
       .on("mousemove", (ev: MouseEvent, d) => {
         const rect = wrapRef.current?.getBoundingClientRect();
@@ -121,7 +143,7 @@ export default function RiskGraphView({
       })
       .on("mouseleave", () => {
         setTip(null);
-        link.attr("stroke-opacity", (l) => (l.star ? 0.7 : 0.6));
+        link.attr("stroke-opacity", (l) => (l.star ? (many ? 0.35 : 0.7) : many ? 0.3 : 0.6));
         node.attr("opacity", 1);
       });
 
@@ -145,7 +167,7 @@ export default function RiskGraphView({
       .text("!");
 
     node
-      .filter((d) => d.center || allLabels || d.nTenders >= maxN * 0.3 || !!d.label)
+      .filter((d) => d.center || allLabels || labelled.has(d.edrpou) || !!d.label)
       .append("text")
       .attr("dy", (d) => r(d) + 13)
       .attr("text-anchor", "middle")
@@ -159,10 +181,11 @@ export default function RiskGraphView({
 
     const sim = d3
       .forceSimulation(nodes)
-      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.edrpou).distance((l) => (l.star ? 90 + 150 * (1 - l.weight / maxW) : 70)))
-      .force("charge", d3.forceManyBody().strength(-260))
-      .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collide", d3.forceCollide<SimNode>().radius((d) => r(d) + 16))
+      // partner-to-partner lines pull groups of partners next to each other on their ring
+      .force("link", d3.forceLink<SimNode, SimLink>(links).id((d) => d.edrpou).distance(50).strength((l) => (l.star ? 0 : many ? 0.003 : 0.03)))
+      .force("radial", d3.forceRadial<SimNode>((d) => (d.center ? 0 : ring(d)), width / 2, height / 2).strength(0.9))
+      .force("charge", d3.forceManyBody().strength(many ? -8 : -80).distanceMax(150))
+      .force("collide", d3.forceCollide<SimNode>().radius((d) => r(d) + (allLabels || labelled.has(d.edrpou) ? 10 : 2)))
       .on("tick", () => {
         link
           .attr("x1", (l) => (l.source as SimNode).x ?? 0)
@@ -206,18 +229,11 @@ export default function RiskGraphView({
     return () => {
       sim.stop();
     };
-  }, [graph, height, onSelect, limit, allLabels]);
+  }, [graph, height, onSelect, allLabels]);
 
   return (
     <div ref={wrapRef} className="relative">
       <div className="mb-2 flex flex-wrap items-center gap-4 text-xs text-muted">
-        <label className="flex items-center gap-2">
-          показати партнерів
-          <select value={limit} onChange={(e) => setLimit(Number(e.target.value))} className="rounded border border-line bg-white px-2 py-0.5">
-            {[10, 20, 40].filter((v) => v <= Math.max(10, totalPartners)).map((v) => <option key={v} value={v}>{v}</option>)}
-            {totalPartners > 40 && <option value={totalPartners}>усіх ({totalPartners})</option>}
-          </select>
-        </label>
         <label className="flex items-center gap-2">
           <input type="checkbox" checked={allLabels} onChange={(e) => setAllLabels(e.target.checked)} />
           підписати всі
@@ -237,7 +253,7 @@ export default function RiskGraphView({
           партнер: низький · підвищений · високий ризик
         </div>
         <div className="mt-1 flex items-center gap-2"><span className="inline-block h-4 w-4 rounded-full border-[3px] border-[#7f1d1d] bg-white text-center text-[9px] font-black leading-[10px] text-[#7f1d1d]">!</span> уже покарана АМКУ</div>
-        <div className="mt-1 flex items-center gap-2"><span className="inline-block h-2 w-2 rounded-full bg-slate-400" /><span className="inline-block h-4 w-4 rounded-full bg-slate-400" /> більше коло = більше спільних тендерів</div>
+        <div className="mt-1 flex items-center gap-2"><span className="inline-block h-2 w-2 rounded-full bg-slate-400" /><span className="inline-block h-4 w-4 rounded-full bg-slate-400" /> ближче до центру і більше коло = більше спільних тендерів</div>
         <div className="mt-1 flex items-center gap-2"><span className="inline-block h-[5px] w-6 rounded bg-slate-500" /> товща лінія і число = частіше зустрічались</div>
       </div>
 

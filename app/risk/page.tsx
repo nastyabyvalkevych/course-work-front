@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
+import { evaluateSignals, formatSignalValue } from "@/lib/explain";
 import { date, num, pct, riskBadgeClass, riskLabel } from "@/lib/risk";
 import { RiskRanking, RiskSummary } from "@/lib/types";
 
@@ -167,6 +168,12 @@ function RiskHomeInner() {
           </div>
         </div>
 
+        <p className="text-xs text-muted">
+          «Чому в списку» — ознаки з історії торгів, за якими компанія помітно відрізняється від звичайних (поріг — приблизно
+          верхні 10 % ринку). Наведіть на ознаку, щоб побачити значення і пояснення; повний перелік — у картці компанії.
+          Оцінку ставить модель за всіма показниками і зв&apos;язками разом, тож компанія може мати високий ризик і без жодної
+          окремої яскравої ознаки.
+        </p>
         {error && <p className="text-sm text-red-700">{error}</p>}
         <div className="overflow-x-auto rounded-2xl border border-line">
           <table className="w-full text-sm">
@@ -175,6 +182,7 @@ function RiskHomeInner() {
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Компанія</th>
                 <th className="px-4 py-3">Ризик</th>
+                <th className="px-4 py-3">Чому в списку</th>
                 <th className="px-4 py-3">Тендерів</th>
                 <th className="px-4 py-3">Перемог</th>
                 <th className="px-4 py-3">Партнерів</th>
@@ -184,7 +192,7 @@ function RiskHomeInner() {
             </thead>
             <tbody>
               {loading && (
-                <tr><td colSpan={8} className="px-4 py-6 text-center text-muted">Завантаження…</td></tr>
+                <tr><td colSpan={9} className="px-4 py-6 text-center text-muted">Завантаження…</td></tr>
               )}
               {!loading && ranking?.items.map((c) => (
                 <tr key={c.edrpou} className="border-t border-line hover:bg-surface/60">
@@ -199,6 +207,25 @@ function RiskHomeInner() {
                     <span className={`inline-block rounded-full border px-2 py-0.5 text-xs font-semibold ${riskBadgeClass(c.score)}`}>
                       {pct(c.score)} · {riskLabel(c.score)}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {(() => {
+                      const hits = evaluateSignals(c.features, { nTenders: c.nTenders, degree: c.degree, sanctionedPartners: c.sanctionedNeighbors ?? 0 }).filter((r) => r.hit);
+                      if (!hits.length) return <span className="text-xs text-muted">без явних ознак</span>;
+                      return (
+                        <div className="flex max-w-xs flex-wrap gap-1">
+                          {hits.slice(0, 3).map((r) => (
+                            <span key={r.signal.id} title={`${r.signal.title}: ${formatSignalValue(r.signal, r.value)} (поріг ${r.signal.threshold}). ${r.signal.text}`}
+                              className="cursor-help rounded-md border border-red-200 bg-red-50 px-1.5 py-0.5 text-[0.7rem] font-semibold text-red-800">
+                              {r.signal.short}
+                            </span>
+                          ))}
+                          {hits.length > 3 && (
+                            <Link href={`/risk/company/${c.edrpou}#signals`} className="rounded-md border border-line px-1.5 py-0.5 text-[0.7rem] font-semibold text-muted hover:text-accent">+{hits.length - 3}</Link>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3">{num(c.nTenders)}</td>
                   <td className="px-4 py-3">{num(c.nWon)} <span className="text-muted">({pct(c.winRate)})</span></td>
