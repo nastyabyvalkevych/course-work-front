@@ -137,6 +137,7 @@ export default function Home() {
           <Card href="/risk" title="Рейтинг ризику" text="Список компаній за ризиком змови з фільтрами за областю, активністю і повнотою історії. Картки компаній з поясненням і мапою партнерів." />
           <Card href="/risk/map" title="Мапа України" text="Частка компаній високого ризику і покараних АМКУ по областях. Клік по області відкриває її список." />
           <Card href="/risk/backtest" title="Перевірка на минулому" text="Список підозрілих на кінець року поруч із реальними рішеннями АМКУ наступних років." />
+          <Card href="/risk/updates" title="Нові рішення АМКУ" text="Кого покарали в останній версії реєстру і яку оцінку сервіс дав їм ще до рішення." />
           <Card href="/risk/groups" title="Хто ходить на торги разом" text="Тісні групи компаній, які роками приходять на тендери лише одна з одною: хто в них, скільки виграли, чи вже когось покарали." />
           <Card href="/risk/buyers" title="Замовники" text="У кого торги найчастіше проходять «удвох» або з одним учасником, і які постійні пари постачальників навколо них." />
           <Card href="/risk/markets" title="Ринки і гроші" text="На яких ринках і в яких областях найбільше грошей виграли компанії, схожі на покараних." />
@@ -155,6 +156,7 @@ export default function Home() {
           <Link href="/risk" className="transition hover:text-ink">Ризики</Link>
           <Link href="/risk/map" className="transition hover:text-ink">Мапа</Link>
           <Link href="/risk/backtest" className="transition hover:text-ink">Перевірка</Link>
+          <Link href="/risk/updates" className="transition hover:text-ink">Нові рішення</Link>
           <Link href="/risk/groups" className="transition hover:text-ink">Групи</Link>
           <Link href="/risk/buyers" className="transition hover:text-ink">Замовники</Link>
           <Link href="/risk/markets" className="transition hover:text-ink">Ринки</Link>

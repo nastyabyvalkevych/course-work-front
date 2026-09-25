@@ -504,3 +504,38 @@ export type CompanyEvidence = {
     { count: number; examples: EvidenceTender[] }
   >;
 };
+
+// --- AMCU register updates ---
+export type RegisterVersion = { version: string; rows: number; companies: number; decisions: number; latest: string | null };
+
+export type RegisterAdded = {
+  edrpou: string;
+  name: string | null;
+  decisionNumber: string;
+  decisionDate: string;
+  body: string | null;
+  score: number | null;
+  rank: number | null;
+  percentile: number | null;
+  nTenders: number | null;
+  nWon: number | null;
+  coverage: string | null;
+  region: string | null;
+  degree: number | null;
+  forecastRank: number | null;
+  forecastRankFull: number | null;
+  forecastScore: number | null;
+};
+
+export type RegisterUpdates = {
+  from: string;
+  to: string;
+  versions: RegisterVersion[];
+  summary: {
+    added: number; removed: number; inGraph: number; notInData: number; fullCoverage: number;
+    highRisk: number; raisedOrHigh: number; inTop10Pct: number; medianPercentile: number | null;
+    totalScored: number; forecastPopulation: number;
+  };
+  added: RegisterAdded[];
+  removed: { edrpou: string; name: string | null }[];
+};
