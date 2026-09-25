@@ -71,13 +71,21 @@ export default function CompanyRiskPage() {
   const onSelect = useCallback((id: string) => router.push(`/risk/company/${id}`), [router]);
 
   if (error) {
+    const notFound = /404/.test(error);
     return (
       <div className="space-y-4">
         <Link href="/risk" className="text-sm text-muted hover:text-ink">← До рейтингу</Link>
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-          Компанію {edrpou} не знайдено серед учасників торгів у базі. Оцінка можлива лише для
-          компаній, які подавали хоча б одну ставку.
-        </p>
+        {notFound ? (
+          <p className="rounded-2xl border border-warning-line bg-warning-soft p-5 text-sm text-warning">
+            Компанію {edrpou} не знайдено серед учасників торгів у базі. Оцінка можлива лише для
+            компаній, які подавали хоча б одну ставку.
+          </p>
+        ) : (
+          <p className="rounded-2xl border border-danger-line bg-danger-soft p-5 text-sm text-danger">
+            Не вдалося отримати дані з сервера ({error.replace("API error: ", "код ")}). Це не означає, що компанії немає:
+            спробуйте оновити сторінку за хвилину.
+          </p>
+        )}
       </div>
     );
   }

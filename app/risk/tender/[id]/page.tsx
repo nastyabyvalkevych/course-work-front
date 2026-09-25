@@ -24,13 +24,20 @@ export default function TenderRiskPage() {
   }, [id]);
 
   if (error) {
+    const notFound = /404/.test(error);
     return (
       <div className="space-y-4">
         <Link href="/risk" className="text-sm text-muted hover:text-ink">← До рейтингу</Link>
-        <p className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-          Тендер {id} не знайдено в локальній базі. Підтримуються номер виду UA-РРРР-ММ-ДД-NNNNNN-x,
-          внутрішній ідентифікатор Prozorro або числовий id.
-        </p>
+        {notFound ? (
+          <p className="rounded-2xl border border-warning-line bg-warning-soft p-5 text-sm text-warning">
+            Тендер {id} не знайдено в локальній базі. Підтримуються номер виду UA-РРРР-ММ-ДД-NNNNNN-x,
+            внутрішній ідентифікатор Prozorro або числовий id.
+          </p>
+        ) : (
+          <p className="rounded-2xl border border-danger-line bg-danger-soft p-5 text-sm text-danger">
+            Не вдалося отримати дані з сервера ({error.replace("API error: ", "код ")}). Спробуйте оновити сторінку за хвилину.
+          </p>
+        )}
       </div>
     );
   }
