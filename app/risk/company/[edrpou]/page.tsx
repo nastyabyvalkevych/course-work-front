@@ -7,19 +7,12 @@ import { useCallback, useEffect, useState } from "react";
 import RiskGraphView from "@/components/RiskGraph";
 import SignalDetails from "@/components/SignalDetails";
 import { fetchJson } from "@/lib/api";
+import { Card, Skeleton } from "@/components/ui";
 import { date, money, num, pct, riskBadgeClass, riskBarColor, riskLabel } from "@/lib/risk";
 import { evaluateSignals, formatSignalValue, points, SignalResult } from "@/lib/explain";
 import { CompanyEvidence, CompanyGroupSummary, FeatureNorms, CompanyHistoryItem, CompanyLinkItem, RiskCompany, RiskGraph } from "@/lib/types";
 import { isWatched, toggleWatch } from "@/lib/watchlist";
 
-function Card({ title, children, className = "" }: { title?: string; children: React.ReactNode; className?: string }) {
-  return (
-    <section className={`rounded-2xl border border-line bg-surface p-5 ${className}`}>
-      {title && <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">{title}</h2>}
-      {children}
-    </section>
-  );
-}
 
 export default function CompanyRiskPage() {
   const { edrpou } = useParams<{ edrpou: string }>();
@@ -88,7 +81,7 @@ export default function CompanyRiskPage() {
       </div>
     );
   }
-  if (!data) return <p className="text-muted">Завантаження…</p>;
+  if (!data) return <Skeleton lines={6} className="max-w-2xl" />;
 
   return (
     <div className="space-y-8">

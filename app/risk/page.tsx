@@ -5,19 +5,11 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, Suspense, useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
+import { Skeleton, Stat } from "@/components/ui";
 import { evaluateSignals, formatSignalValue } from "@/lib/explain";
 import { date, num, pct, riskBadgeClass, riskLabel } from "@/lib/risk";
 import { RiskRanking, RiskSummary } from "@/lib/types";
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface p-5">
-      <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-3 text-3xl font-extrabold leading-none tracking-tight text-ink">{value}</p>
-      {sub && <p className="mt-2 text-xs text-muted">{sub}</p>}
-    </div>
-  );
-}
 
 function RiskHomeInner() {
   const router = useRouter();
@@ -237,7 +229,8 @@ function RiskHomeInner() {
             </tbody>
           </table>
         </div>
-        {ranking && (
+        {!ranking && <Skeleton lines={8} />}
+      {ranking && (
           <div className="flex items-center justify-between text-sm text-muted">
             <span>Показано {ranking.offset + 1}–{Math.min(ranking.offset + limit, ranking.total)} з {num(ranking.total)}</span>
             <div className="flex gap-2">

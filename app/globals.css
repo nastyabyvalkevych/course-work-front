@@ -1,38 +1,171 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------
+   Design tokens. One neutral scale, one accent, three semantic tones
+   (danger / warning / ok) that map to the risk bands used everywhere.
+   ------------------------------------------------------------------ */
 @theme inline {
   --color-canvas: #ffffff;
-  --color-surface: #f4f4f5;
-  --color-surface-strong: #e4e4e7;
-  --color-ink: #111111;
-  --color-muted: #64748b /* changed to slate-500 equivalent */;
-  --color-line: rgba(0, 0, 0, 0.1);
-  --color-accent: #3b82f6 /* action blue */;
-  --color-accent-strong: #2563eb;
-  
+  --color-surface: #f6f7f9;
+  --color-surface-strong: #e9ecf0;
+  --color-ink: #0f172a;
+  --color-ink-soft: #334155;
+  --color-muted: #64748b;
+  --color-line: rgba(15, 23, 42, 0.09);
+  --color-line-strong: rgba(15, 23, 42, 0.18);
+  --color-accent: #2563eb;
+  --color-accent-strong: #1d4ed8;
+  --color-accent-soft: #e8efff;
+
+  --color-danger: #b91c1c;
+  --color-danger-soft: #fee2e2;
+  --color-danger-line: #fecaca;
+  --color-warning: #b45309;
+  --color-warning-soft: #fef3c7;
+  --color-warning-line: #fde68a;
+  --color-ok: #15803d;
+  --color-ok-soft: #dcfce7;
+  --color-ok-line: #bbf7d0;
+
   --font-sans: var(--font-manrope);
   --font-display: var(--font-manrope);
   --font-mono: var(--font-geist-mono);
+
+  --radius-card: 1rem;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 16px -8px rgba(15, 23, 42, 0.12);
+  --shadow-pop: 0 8px 30px -12px rgba(15, 23, 42, 0.28);
 }
 
 :root {
   color-scheme: light;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 html, body {
   background-color: var(--color-canvas);
   color: var(--color-ink);
-  font-family: var(--font-manrope), sans-serif;
+  font-family: var(--font-manrope), system-ui, sans-serif;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a, button, input, select {
-  transition: all 150ms ease;
+/* Numbers line up in tables and stat tiles */
+body {
+  font-variant-numeric: tabular-nums;
+}
+
+a, button, input, select, textarea {
+  transition: color 150ms ease, background-color 150ms ease, border-color 150ms ease, box-shadow 150ms ease, transform 150ms ease;
+}
+
+/* Visible keyboard focus everywhere, invisible for mouse clicks */
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 ::selection {
-  background: rgba(59, 130, 246, 0.2);
-  color: #000;
+  background: rgba(37, 99, 235, 0.18);
+  color: var(--color-ink);
+}
+
+/* Headings: tighter tracking, calmer weight for h2/h3 */
+h1 { letter-spacing: -0.02em; }
+h2, h3 { letter-spacing: -0.01em; }
+
+/* Form controls: one look for every select / input / textarea */
+select, input[type="text"], input[type="search"], textarea {
+  border: 1px solid var(--color-line-strong);
+  background: var(--color-canvas);
+  border-radius: 0.5rem;
+  min-height: 2.25rem;
+}
+select:hover, input[type="text"]:hover, input[type="search"]:hover, textarea:hover {
+  border-color: var(--color-ink-soft);
+}
+select:focus, input[type="text"]:focus, input[type="search"]:focus, textarea:focus {
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 3px var(--color-accent-soft);
+}
+input[type="checkbox"] {
+  accent-color: var(--color-accent);
+  width: 1rem;
+  height: 1rem;
+}
+
+/* Tables: quiet header, hairline rows, hover row, sticky header where scrolled */
+table {
+  border-collapse: collapse;
+}
+thead th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-line-strong);
+  white-space: nowrap;
+}
+tbody tr {
+  border-top: 1px solid var(--color-line);
+}
+tbody tr:hover {
+  background: rgba(37, 99, 235, 0.035);
+}
+tbody td {
+  vertical-align: top;
+}
+.max-h-\[560px\] thead, .max-h-\[640px\] thead, .max-h-\[420px\] thead {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--color-surface);
+}
+
+/* Cards get a hair of depth so sections read as objects, not boxes */
+section.rounded-2xl, div.rounded-2xl {
+  box-shadow: var(--shadow-card);
+}
+section.rounded-2xl.border-2 {
+  box-shadow: var(--shadow-pop);
+}
+
+/* Links inside prose */
+p a, li a, td a {
+  text-underline-offset: 3px;
+}
+p a:hover, li a:hover, td a:hover {
+  text-decoration: underline;
+}
+
+/* Skeleton shimmer for loading states */
+@keyframes shimmer {
+  0% { background-position: -400px 0; }
+  100% { background-position: 400px 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--color-surface) 25%, var(--color-surface-strong) 37%, var(--color-surface) 63%);
+  background-size: 800px 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+  border-radius: 0.5rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition: none !important; animation: none !important; }
+  html { scroll-behavior: auto; }
+}
+
+@media print {
+  header, nav, footer, button { display: none !important; }
+  section.rounded-2xl { box-shadow: none; break-inside: avoid; }
 }

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 
 import CsvButton from "@/components/CsvButton";
 import { fetchJson } from "@/lib/api";
+import { Skeleton } from "@/components/ui";
 import { date, money, num, pct, riskBadgeClass, riskLabel } from "@/lib/risk";
 import { GroupDetail, LINK_KIND_LABEL } from "@/lib/types-insights";
 
@@ -45,7 +46,7 @@ export default function GroupPage() {
       </div>
     );
   }
-  if (!data) return <p className="text-muted">Завантаження…</p>;
+  if (!data) return <Skeleton lines={6} className="max-w-2xl" />;
 
   const names = new Map(data.members.map((m) => [m.edrpou, m.name ?? m.edrpou]));
 

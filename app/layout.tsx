@@ -29,14 +29,14 @@ export default function RootLayout({
     <html lang="uk">
       <body className={`${manrope.variable} ${geistMono.variable} antialiased`}>
         <div className="min-h-screen">
-          <header className="sticky top-0 z-40 bg-canvas/95 backdrop-blur-sm border-b border-line/50">
-            <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-6 px-5 py-4 sm:px-6 lg:px-8">
+          <header className="sticky top-0 z-40 border-b border-line bg-canvas/90 backdrop-blur-md">
+            <div className="mx-auto flex w-full max-w-7xl items-center justify-between gap-4 px-5 py-3 sm:px-6 lg:px-8">
               <Link href="/" className="flex items-center gap-3 group">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-ink text-sm font-extrabold tracking-[0.05em] text-canvas transition group-hover:bg-accent">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-ink text-[0.8rem] font-extrabold tracking-[0.05em] text-canvas transition group-hover:bg-accent">
                   PI
                 </div>
                 <div className="hidden sm:block">
-                  <p className="text-lg font-extrabold leading-none tracking-tight text-ink">
+                  <p className="text-base font-extrabold leading-none tracking-tight text-ink">
                     Prozorro Insight
                   </p>
                   <p className="mt-0.5 text-xs font-medium text-muted">

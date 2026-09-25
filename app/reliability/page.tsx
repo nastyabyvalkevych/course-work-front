@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
+import { Skeleton, Stat } from "@/components/ui";
 import { num } from "@/lib/risk";
 import { ReliabilityProfile, ReliabilityReport } from "@/lib/types";
 
@@ -13,15 +14,6 @@ const fmtPct = (v: number, digits = 2) => `${(v * 100).toFixed(digits)} %`;
 const fmtHours = (h: number) =>
   !Number.isFinite(h) ? "∞" : h >= 48 ? `${(h / 24).toFixed(1)} діб` : `${h.toFixed(1)} год`;
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface p-5">
-      <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-3 text-3xl font-extrabold leading-none tracking-tight text-ink">{value}</p>
-      {sub && <p className="mt-2 text-xs text-muted">{sub}</p>}
-    </div>
-  );
-}
 
 function Curve({ curve, horizon }: { curve: { hours: number; reliability: number }[]; horizon: number }) {
   const w = 640;
@@ -135,6 +127,7 @@ export default function ReliabilityPage() {
 
       {error && <p className="text-sm text-red-700">{error}</p>}
 
+      {!report && !error && <Skeleton lines={6} className="max-w-2xl" />}
       {report && (
         <>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

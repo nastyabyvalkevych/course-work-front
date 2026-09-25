@@ -6,19 +6,11 @@ import { useEffect, useState } from "react";
 
 import CsvButton from "@/components/CsvButton";
 import { fetchJson } from "@/lib/api";
+import { Skeleton, Stat } from "@/components/ui";
 import { date, money, num, pct, riskBadgeClass, riskLabel } from "@/lib/risk";
 import { Buyer } from "@/lib/types-insights";
 import { isWatched, toggleWatch } from "@/lib/watchlist";
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
-  return (
-    <div className="rounded-2xl border border-line bg-surface p-5">
-      <p className="text-[0.7rem] font-bold uppercase tracking-wider text-muted">{label}</p>
-      <p className="mt-3 text-2xl font-extrabold leading-none tracking-tight text-ink">{value}</p>
-      {sub && <p className="mt-2 text-xs text-muted">{sub}</p>}
-    </div>
-  );
-}
 
 function verdict(b: Buyer) {
   const reasons: string[] = [];
@@ -60,7 +52,7 @@ export default function BuyerPage() {
       </div>
     );
   }
-  if (!data) return <p className="text-muted">Завантаження…</p>;
+  if (!data) return <Skeleton lines={6} className="max-w-2xl" />;
 
   const v = verdict(data);
 

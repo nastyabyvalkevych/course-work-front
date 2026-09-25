@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { fetchJson } from "@/lib/api";
+import { Skeleton } from "@/components/ui";
 import { date, money, num, pct, riskBadgeClass, riskBarColor, riskLabel } from "@/lib/risk";
 import { reasonsTender, verdictTender } from "@/lib/explain";
 import { RiskTender } from "@/lib/types";
@@ -33,7 +34,7 @@ export default function TenderRiskPage() {
       </div>
     );
   }
-  if (!data) return <p className="text-muted">Завантаження…</p>;
+  if (!data) return <Skeleton lines={6} className="max-w-2xl" />;
 
   const t = data.tender;
   const s = data.signals;
