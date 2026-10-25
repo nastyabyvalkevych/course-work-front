@@ -177,7 +177,7 @@ export default function ReliabilityPage() {
                   <td className="py-2 pr-3 font-mono text-xs">R(k) ≈ Π Rᵢ(k)^Vᵢ(k), λₛ = Σ rₖ[1 − R(k)]</td>
                   <td className="py-2 pr-3 font-mono">
                     1 − R = {report.kubat.failureProbabilityPerRequest.toExponential(2)}
-                    {report.kubat.failuresPerHour !== undefined && `; λₛ = ${report.kubat.failuresPerHour.toFixed(1)} відмов/год`}
+                    {report.kubat.failuresPerHour !== undefined && `; ≈ ${report.kubat.failuresPerHour.toFixed(1)} невдалих запитів/год`}
                   </td>
                 </tr>
                 <tr className="border-t border-line">
@@ -190,7 +190,7 @@ export default function ReliabilityPage() {
                   <td className="py-2 pr-3 font-semibold text-ink">Laprie</td>
                   <td className="py-2 pr-3">неперервний</td>
                   <td className="py-2 pr-3 font-mono text-xs">πB′ = 0, λₛ = Σ πᵢλᵢ, R(T) = e^(−λₛT)</td>
-                  <td className="py-2 pr-3 font-mono">λₛ = {report.continuous.failureRatePerHour.toExponential(2)} 1/год; R(T) = {fmtR(report.continuous.reliabilityAtHorizon, 4)}</td>
+                  <td className="py-2 pr-3 font-mono">λₛ (відмови системи) = {report.continuous.failureRatePerHour.toExponential(2)} 1/год; R(T) = {fmtR(report.continuous.reliabilityAtHorizon, 4)}</td>
                 </tr>
               </tbody>
             </table>
