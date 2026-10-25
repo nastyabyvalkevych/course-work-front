@@ -15,7 +15,10 @@ export async function fetchJson<T>(path: string, init?: RequestInit): Promise<T>
   });
 
   if (!response.ok) {
-    throw new Error(`API error: ${response.status}`);
+    // keep the server's explanation (e.g. a rejected reliability profile) for the user
+    const body = (await response.json().catch(() => null)) as { message?: unknown } | null;
+    const message = Array.isArray(body?.message) ? body.message.join("; ") : body?.message;
+    throw new Error(`API error: ${response.status}${typeof message === "string" && message ? ` — ${message}` : ""}`);
   }
 
   return response.json() as Promise<T>;

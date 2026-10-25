@@ -85,6 +85,16 @@ export default function ReliabilityPage() {
     }
   };
 
+  const downloadReport = () => {
+    if (!report) return;
+    const blob = new Blob([JSON.stringify(report, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `reliability-report-${report.computedAt.slice(0, 10)}-T${report.horizonHours}h.json`;
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
   const modules = useMemo(() => (report ? [...report.modules].sort((a, b) => b.improvementPotential - a.improvementPotential) : []), [report]);
   const ids = report?.usage.moduleIds ?? [];
 
@@ -94,10 +104,11 @@ export default function ReliabilityPage() {
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Самооцінка надійності</p>
         <h1 className="text-3xl font-extrabold tracking-tight text-ink">Марківська модель надійності API</h1>
         <p className="max-w-3xl text-sm text-muted">
-          Система описана як набір модулів і завдань (сценаріїв запитів). З профілю використання будується вектор
-          початкових станів π₀, матриця передачі керування P та ймовірності виходу. Дискретна модель Чеунга дає
-          ймовірність коректного виконання одного запиту, неперервна модель Лапрі — інтенсивність відмов і надійність
-          за період. У режимі «наживо» стан бази і кешу підставляється в модель.
+          Оцінка надійності ПЗ виявлення ознак змови у публічних закупівлях України. Система описана як набір модулів
+          і завдань (сценаріїв запитів). З профілю використання автоматично будується вектор початкових станів π₀,
+          матриця передачі керування P та ймовірності виходу. Дискретні моделі Gokhale, Kubat і Cheung дають
+          ймовірність коректного виконання запиту, неперервна модель Laprie — інтенсивність відмов і надійність за
+          період T. У режимі «наживо» стан бази і кешу підставляється в модель.
         </p>
       </header>
 
@@ -112,6 +123,11 @@ export default function ReliabilityPage() {
           <input type="checkbox" checked={live} disabled={custom} onChange={(e) => setLive(e.target.checked)} />
           наживо (стан бази та кешу)
         </label>
+        {report && (
+          <button onClick={downloadReport} className="rounded-lg border border-line px-3 py-1 hover:bg-surface">
+            Завантажити звіт (JSON)
+          </button>
+        )}
         {custom && (
           <button onClick={() => setCustom(false)} className="rounded-lg border border-line px-3 py-1 hover:bg-surface">
             ← до вбудованого профілю
@@ -304,6 +320,7 @@ export default function ReliabilityPage() {
             <button onClick={runCustom} className="rounded-lg bg-ink px-4 py-2 text-sm font-semibold text-canvas hover:bg-accent">Обчислити</button>
             <button onClick={() => setDraft(JSON.stringify(profile, null, 2))} className="rounded-lg border border-line px-4 py-2 text-sm hover:bg-white">Скинути</button>
           </div>
+          {error && <p className="mt-3 text-sm text-red-700">{error}</p>}
         </section>
       )}
     </div>
