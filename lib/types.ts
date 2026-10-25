@@ -336,6 +336,8 @@ export type ReliabilityReport = {
     curve: { hours: number; reliability: number }[];
     availability?: number;
   };
+  gokhale: { visits: number[]; systemReliability: number; criticalModule: string };
+  kubat: { failureProbabilityPerRequest: number; failuresPerHour?: number };
   modules: {
     id: string;
     name: string;
@@ -352,6 +354,7 @@ export type ReliabilityReport = {
     name: string;
     weight: number;
     modelReliability: number;
+    visits: number[];
     observedSuccessRate?: number;
     absError?: number;
   }[];

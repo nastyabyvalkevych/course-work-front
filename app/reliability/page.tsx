@@ -137,6 +137,49 @@ export default function ReliabilityPage() {
             <Stat label="Невдалих запитів за годину" value={report.discrete.operationalFailuresPerHour === undefined ? "—" : report.discrete.operationalFailuresPerHour.toFixed(1)} sub="за профілем інтенсивності запитів" />
           </div>
 
+          <section className="rounded-2xl border border-line bg-surface p-5 overflow-x-auto">
+            <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">Порівняння марківських моделей</h2>
+            <table className="w-full text-sm">
+              <thead className="text-left text-xs uppercase text-muted">
+                <tr>
+                  <th className="py-2 pr-3">Модель</th>
+                  <th className="py-2 pr-3">Час</th>
+                  <th className="py-2 pr-3">Формула</th>
+                  <th className="py-2 pr-3">Результат</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr className="border-t border-line">
+                  <td className="py-2 pr-3 font-semibold text-ink">Gokhale</td>
+                  <td className="py-2 pr-3">дискретний</td>
+                  <td className="py-2 pr-3 font-mono text-xs">Vᵢ = qᵢ + Σ Vⱼpⱼᵢ, R = Π Rᵢ^Vᵢ</td>
+                  <td className="py-2 pr-3 font-mono">R = {fmtR(report.gokhale.systemReliability, 5)}; критичний — {report.gokhale.criticalModule}</td>
+                </tr>
+                <tr className="border-t border-line">
+                  <td className="py-2 pr-3 font-semibold text-ink">Kubat</td>
+                  <td className="py-2 pr-3">дискретний</td>
+                  <td className="py-2 pr-3 font-mono text-xs">R(k) ≈ Π Rᵢ(k)^Vᵢ(k), λₛ = Σ rₖ[1 − R(k)]</td>
+                  <td className="py-2 pr-3 font-mono">
+                    1 − R = {report.kubat.failureProbabilityPerRequest.toExponential(2)}
+                    {report.kubat.failuresPerHour !== undefined && `; λₛ = ${report.kubat.failuresPerHour.toFixed(1)} відмов/год`}
+                  </td>
+                </tr>
+                <tr className="border-t border-line">
+                  <td className="py-2 pr-3 font-semibold text-ink">Cheung</td>
+                  <td className="py-2 pr-3">дискретний</td>
+                  <td className="py-2 pr-3 font-mono text-xs">S = (I − Q)⁻¹, R = Σ Sᵢ Rᵢ eᵢ</td>
+                  <td className="py-2 pr-3 font-mono">R = {fmtR(report.discrete.systemReliability, 5)}</td>
+                </tr>
+                <tr className="border-t border-line">
+                  <td className="py-2 pr-3 font-semibold text-ink">Laprie</td>
+                  <td className="py-2 pr-3">неперервний</td>
+                  <td className="py-2 pr-3 font-mono text-xs">πB′ = 0, λₛ = Σ πᵢλᵢ, R(T) = e^(−λₛT)</td>
+                  <td className="py-2 pr-3 font-mono">λₛ = {report.continuous.failureRatePerHour.toExponential(2)} 1/год; R(T) = {fmtR(report.continuous.reliabilityAtHorizon, 4)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
+
           <section className="rounded-2xl border border-line bg-surface p-5">
             <h2 className="mb-3 text-sm font-bold uppercase tracking-wider text-muted">R(t) = exp(−λt)</h2>
             <Curve curve={report.continuous.curve} horizon={report.horizonHours} />
